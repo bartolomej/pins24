@@ -1,6 +1,9 @@
 package pins24.phase;
 
 import java.io.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import pins24.common.*;
 
 /**
@@ -111,9 +114,55 @@ public class LexAn implements AutoCloseable {
 	 * {@code peekToken} in {@code takeToken}.
 	 */
 	private void nextToken() {
-		nextChar();
+		while (true) {
+			switch (buffChar) {
+				case '\n':
+				case ' ':
+				case '\t':
+				case '\r':
+					nextChar();
+					break;
+				case '-':
+				case '+':
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					readNumberToken();
+					return;
+				case -1:
+					return;
+				default:
+					// Not yet implemented, remove later
+					nextChar();
+					Report.info("Unknown token: " + (char)buffChar + " (" + buffChar + ")");
+			}
+		}
+	}
 
+	private void readNumberToken() {
+		StringBuilder lexeme = new StringBuilder();
+        do {
+            lexeme.append((char) buffChar);
+            nextChar();
+        } while (matchesPattern("[0-9]", buffChar));
+		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.INTCONST, lexeme.toString());
+	}
 
+	private Report.Location getCurrentLocation() {
+		return new Report.Location(this.buffCharLine, this.buffCharColumn);
+	}
+
+	private boolean matchesPattern(String regex, int input) {
+		Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+		Matcher matcher = pattern.matcher((char)input + "");
+		return matcher.find();
 	}
 
 	/**
