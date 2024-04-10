@@ -120,6 +120,8 @@ public class LexAn implements AutoCloseable {
 
 			tryReadKeywordOrIdentifierToken();
 
+			trySwallowingComment();
+
 			switch (buffChar) {
 				case '\n':
 				case ' ':
@@ -218,6 +220,14 @@ public class LexAn implements AutoCloseable {
 					break;
 				default:
 					throw unexpectedTokenError();
+			}
+		}
+	}
+
+	private void trySwallowingComment() {
+		if (buffChar == '#') {
+			while (buffChar != '\n') {
+				nextChar();
 			}
 		}
 	}
