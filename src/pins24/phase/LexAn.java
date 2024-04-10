@@ -114,7 +114,8 @@ public class LexAn implements AutoCloseable {
 	 * {@code peekToken} in {@code takeToken}.
 	 */
 	private void nextToken() {
-		while (true) {
+		buffToken = null;
+		while (buffToken == null) {
 			switch (buffChar) {
 				case '\n':
 				case ' ':
@@ -122,8 +123,6 @@ public class LexAn implements AutoCloseable {
 				case '\r':
 					nextChar();
 					break;
-				case '-':
-				case '+':
 				case '0':
 				case '1':
 				case '2':
@@ -135,12 +134,96 @@ public class LexAn implements AutoCloseable {
 				case '8':
 				case '9':
 					readNumberToken();
-					return;
+					break;
 				case '\'':
 					readCharToken();
-					return;
+					break;
+				case ',':
+					makeToken(Token.Symbol.COMMA);
+					nextChar();
+					break;
+				case '(':
+					makeToken(Token.Symbol.LPAREN);
+					nextChar();
+					break;
+				case ')':
+					makeToken(Token.Symbol.RPAREN);
+					nextChar();
+					break;
+				case '^':
+					makeToken(Token.Symbol.PTR);
+					nextChar();
+					break;
+				case '%':
+					makeToken(Token.Symbol.MOD);
+					nextChar();
+					break;
+				case '/':
+					makeToken(Token.Symbol.DIV);
+					nextChar();
+					break;
+				case '*':
+					makeToken(Token.Symbol.MUL);
+					nextChar();
+					break;
+				case '-':
+					makeToken(Token.Symbol.SUB);
+					nextChar();
+					break;
+				case '+':
+					makeToken(Token.Symbol.ADD);
+					nextChar();
+					break;
+				case '&':
+					nextChar();
+					matchOrThrow("&");
+					makeToken(Token.Symbol.AND);
+					nextChar();
+					break;
+				case '|':
+					nextChar();
+					matchOrThrow("|");
+					makeToken(Token.Symbol.OR);
+					nextChar();
+					break;
+				case '=':
+					nextChar();
+					if (buffChar == '=') {
+						makeToken(Token.Symbol.EQU);
+						nextChar();
+					} else {
+						makeToken(Token.Symbol.ASSIGN);
+					}
+					break;
+				case '!':
+					nextChar();
+					if (buffChar == '=') {
+						makeToken(Token.Symbol.NEQ);
+						nextChar();
+					} else {
+						makeToken(Token.Symbol.NOT);
+					}
+					break;
+				case '>':
+					nextChar();
+					if (buffChar == '=') {
+						makeToken(Token.Symbol.GEQ);
+						nextChar();
+					} else {
+						makeToken(Token.Symbol.GTH);
+					}
+					break;
+				case '<':
+					nextChar();
+					if (buffChar == '=') {
+						makeToken(Token.Symbol.LEQ);
+						nextChar();
+					} else {
+						makeToken(Token.Symbol.LTH);
+					}
+					break;
 				case -1:
-					return;
+					break;
 				default:
 					// Not yet implemented, remove later
 					nextChar();
@@ -193,10 +276,10 @@ public class LexAn implements AutoCloseable {
 
 	private void readNumberToken() {
 		StringBuilder lexeme = new StringBuilder();
-        do {
+		while (matchesPattern("[0-9]", buffChar)) {
             lexeme.append((char) buffChar);
             nextChar();
-        } while (matchesPattern("[0-9]", buffChar));
+        }
 		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.INTCONST, lexeme.toString());
 	}
 
@@ -206,6 +289,18 @@ public class LexAn implements AutoCloseable {
 
 	private Report.Location getCurrentLocation() {
 		return new Report.Location(this.buffCharLine, this.buffCharColumn);
+	}
+
+	private void makeToken(Token.Symbol symbol) {
+		this.buffToken = new Token(getCurrentLocation(), symbol, (char)buffChar + "");
+	}
+
+	private void matchOrThrow(String regex) {
+		Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+		Matcher matcher = pattern.matcher((char)buffChar + "");
+		if (!matcher.find()) {
+			throw unexpectedTokenError();
+		}
 	}
 
 	private boolean matchesPattern(String regex, int input) {
@@ -268,6 +363,7 @@ public class LexAn implements AutoCloseable {
 		} catch (Report.Error error) {
 			// Izpis opisa napake.
 			System.err.println(error.getMessage());
+			error.printStackTrace();
 			System.exit(1);
 		}
 	}
