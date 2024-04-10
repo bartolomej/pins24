@@ -129,8 +129,25 @@ public class LexAn implements AutoCloseable {
 				case '\r':
 					nextChar();
 					break;
+				case '"':
+					nextChar();
+					StringBuilder stringLexeme = new StringBuilder();
+					while (buffChar != '"') {
+						stringLexeme.append(getSingleCharLexeme());
+						nextChar();
+					}
+					this.buffToken = new Token(getCurrentLocation(), Token.Symbol.STRINGCONST, stringLexeme.toString());
+					nextChar();
+					break;
 				case '\'':
-					readCharToken();
+					nextChar();
+					String charLexeme = getSingleCharLexeme();
+					nextChar();
+					if ((buffChar) != '\'') {
+						throw unexpectedTokenError();
+					}
+					this.buffToken = new Token(getCurrentLocation(), Token.Symbol.CHARCONST, charLexeme);
+					nextChar();
 					break;
 				case ',':
 					makeToken(Token.Symbol.COMMA);
@@ -232,8 +249,7 @@ public class LexAn implements AutoCloseable {
 		}
 	}
 
-	private void readCharToken() {
-		nextChar();
+	private String getSingleCharLexeme() {
 		StringBuilder lexeme = new StringBuilder();
 		if (buffChar == '\\') {
 			nextChar();
@@ -266,12 +282,7 @@ public class LexAn implements AutoCloseable {
 		} else {
 			throw unexpectedTokenError();
 		}
-		nextChar();
-		if ((buffChar) != '\'') {
-			throw unexpectedTokenError();
-		}
-		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.CHARCONST, lexeme.toString());
-		nextChar();
+		return lexeme.toString();
 	}
 
 	private void tryReadNumberToken() {
