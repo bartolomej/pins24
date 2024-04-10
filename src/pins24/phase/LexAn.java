@@ -152,7 +152,33 @@ public class LexAn implements AutoCloseable {
 	private void readCharToken() {
 		nextChar();
 		StringBuilder lexeme = new StringBuilder();
-		if (matchesPattern("[\\x20-\\x7E]", buffChar)) {
+		if (buffChar == '\\') {
+			nextChar();
+			if (buffChar == 'n') {
+				lexeme.append("\n");
+			} else if (buffChar == '\'') {
+				lexeme.append("'");
+			} else if (buffChar == '\\') {
+				lexeme.append("\\");
+			} else {
+				String asciiCode = "";
+				if (matchesPattern("([0-9]|[A-F])", buffChar)) {
+					asciiCode += (char)buffChar;
+				} else {
+					throw unexpectedTokenError();
+				}
+				if (matchesPattern("([0-9]|[A-F])", buffChar)) {
+					asciiCode += (char)buffChar;
+				} else {
+					throw unexpectedTokenError();
+				}
+				nextChar();
+				lexeme.append(Character.toString(
+						Integer.parseInt(asciiCode,16)
+				));
+
+			}
+		} else if (matchesPattern("[\\x20-\\x7E]", buffChar)) {
 			lexeme.append((char)buffChar);
 		} else {
 			throw unexpectedTokenError();
