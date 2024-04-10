@@ -116,24 +116,16 @@ public class LexAn implements AutoCloseable {
 	private void nextToken() {
 		buffToken = null;
 		while (buffToken == null) {
+			tryReadNumberToken();
+
+			tryReadKeywordOrIdentifierToken();
+
 			switch (buffChar) {
 				case '\n':
 				case ' ':
 				case '\t':
 				case '\r':
 					nextChar();
-					break;
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-					readNumberToken();
 					break;
 				case '\'':
 					readCharToken();
@@ -225,9 +217,7 @@ public class LexAn implements AutoCloseable {
 				case -1:
 					break;
 				default:
-					// Not yet implemented, remove later
-					nextChar();
-					Report.info("Unknown token: " + (char)buffChar + " (" + buffChar + ")");
+					throw unexpectedTokenError();
 			}
 		}
 	}
@@ -274,13 +264,41 @@ public class LexAn implements AutoCloseable {
 		nextChar();
 	}
 
-	private void readNumberToken() {
+	private void tryReadNumberToken() {
+		if (!matchesPattern("[0-9]", buffChar)) {
+			return;
+		}
 		StringBuilder lexeme = new StringBuilder();
 		while (matchesPattern("[0-9]", buffChar)) {
             lexeme.append((char) buffChar);
             nextChar();
         }
 		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.INTCONST, lexeme.toString());
+	}
+
+	private void tryReadKeywordOrIdentifierToken() {
+		if (!matchesPattern("[_a-z]", buffChar)) {
+			return;
+		}
+		StringBuilder lexeme = new StringBuilder();
+		while (matchesPattern("[_0-9a-z]", buffChar)) {
+			lexeme.append((char) buffChar);
+			nextChar();
+		}
+		Token.Symbol symbol = switch (lexeme.toString()) {
+			case "fun" -> Token.Symbol.FUN;
+			case "var" -> Token.Symbol.VAR;
+			case "if" -> Token.Symbol.IF;
+			case "then" -> Token.Symbol.THEN;
+			case "else" -> Token.Symbol.ELSE;
+			case "while" -> Token.Symbol.WHILE;
+			case "do" -> Token.Symbol.DO;
+			case "let" -> Token.Symbol.LET;
+			case "in" -> Token.Symbol.IN;
+			case "end" -> Token.Symbol.END;
+			default -> Token.Symbol.IDENTIFIER;
+		};
+		this.buffToken = new Token(getCurrentLocation(), symbol, lexeme.toString());
 	}
 
 	private Report.Error unexpectedTokenError() {
