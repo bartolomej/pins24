@@ -136,6 +136,9 @@ public class LexAn implements AutoCloseable {
 				case '9':
 					readNumberToken();
 					return;
+				case '\'':
+					readCharToken();
+					return;
 				case -1:
 					return;
 				default:
@@ -146,6 +149,22 @@ public class LexAn implements AutoCloseable {
 		}
 	}
 
+	private void readCharToken() {
+		nextChar();
+		StringBuilder lexeme = new StringBuilder();
+		if (matchesPattern("[\\x20-\\x7E]", buffChar)) {
+			lexeme.append((char)buffChar);
+		} else {
+			throw unexpectedTokenError();
+		}
+		nextChar();
+		if ((buffChar) != '\'') {
+			throw unexpectedTokenError();
+		}
+		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.CHARCONST, lexeme.toString());
+		nextChar();
+	}
+
 	private void readNumberToken() {
 		StringBuilder lexeme = new StringBuilder();
         do {
@@ -153,6 +172,10 @@ public class LexAn implements AutoCloseable {
             nextChar();
         } while (matchesPattern("[0-9]", buffChar));
 		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.INTCONST, lexeme.toString());
+	}
+
+	private Report.Error unexpectedTokenError() {
+		return new Report.Error(getCurrentLocation(), "Unexpected token: " + (char)(buffChar));
 	}
 
 	private Report.Location getCurrentLocation() {
