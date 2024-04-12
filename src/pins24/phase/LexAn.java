@@ -266,12 +266,12 @@ public class LexAn implements AutoCloseable {
 				} else {
 					throw unexpectedTokenError();
 				}
+				nextChar();
 				if (matchesPattern("([0-9]|[A-F])", buffChar)) {
 					asciiCode += (char)buffChar;
 				} else {
 					throw unexpectedTokenError();
 				}
-				nextChar();
 				lexeme.append(Character.toString(
 						Integer.parseInt(asciiCode,16)
 				));

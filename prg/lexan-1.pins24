@@ -1,5 +1,1 @@
-hello_var # var
-# test
-var 'c' 'a' '\n'
-
-"hello world hahahahahah ahahhaa"'c'" aksbdnask bask bdahd"
+'\32' '\33' "\n\32\33"
