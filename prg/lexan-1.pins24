@@ -1,2 +1,35 @@
-'
-'
+# Leksikalni elementi jezika pins24
+
+## konstante
+
+### stevila
+
++12 -5123 123
+
+### znaki
+
+'1' 'a' '\n' '\32' '\33'
+
+### niz znakov
+
+
+
+## simboli
+
+= , && || ! == != > < >= <= + - * / % ^ ( )
+
+## imena
+
+ime1
+
+Ime2
+
+_ime3
+
+## kljucne besede
+
+fun var if then else while do let in end
+
+## komentarji
+
+#
