@@ -326,7 +326,13 @@ public class LexAn implements AutoCloseable {
 	}
 
 	private Report.Error unexpectedTokenError() {
-		return new Report.Error(getCurrentLocation(), "Unexpected token: " + (char)(buffChar));
+		String charToPrint = switch (buffChar) {
+            case '\n' -> "\\n";
+            case '\t' -> "\\t";
+            case '\r' -> "\\r";
+            default -> (char)buffChar + "";
+        };
+        return new Report.Error(getCurrentLocation(), "Unexpected token: " + charToPrint+ " (" + buffChar +")");
 	}
 
 	private Report.Location getCurrentLocation() {
