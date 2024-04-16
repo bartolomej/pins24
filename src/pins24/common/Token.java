@@ -13,6 +13,8 @@ public record Token(Report.Location location, Symbol symbol, String lexeme) impl
 	 * Vrste leksikalnih simbolov.
 	 */
 	public enum Symbol {
+		/** Konec datoteke. */
+		EOF,
 		/** Stevilo. */
 		INTCONST,
 		/** Znak. */
