@@ -34,7 +34,7 @@ public class SynAn implements AutoCloseable {
 	public Token check(Token.Symbol symbol) {
 		final Token token = lexAn.takeToken();
 		if (token.symbol() != symbol)
-			throw new Report.Error(token, "Unexpected symbol '" + token.lexeme() + "'.");
+			throw new Report.Error(token, "Unexpected symbol " +token.symbol() + ": '" + token.lexeme() + "'.");
 		return token;
 	}
 
