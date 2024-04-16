@@ -122,6 +122,12 @@ public class LexAn implements AutoCloseable {
 
 			trySwallowingComment();
 
+			// Prevent the code in switch statement to override
+			// any tokens produced by the above code.
+			if (buffToken != null) {
+				break;
+			}
+
 			switch (buffChar) {
 				case '\n':
 				case ' ':
@@ -234,6 +240,7 @@ public class LexAn implements AutoCloseable {
 					}
 					break;
 				case -1:
+					makeToken(Token.Symbol.EOF);
 					break;
 				default:
 					throw unexpectedTokenError();
@@ -399,7 +406,7 @@ public class LexAn implements AutoCloseable {
 				Report.warning("Unused arguments in the command line.");
 
 			try (LexAn lexAn = new LexAn(cmdLineArgs[0])) {
-				while (lexAn.peekToken() != null)
+				while (lexAn.peekToken().symbol() != Token.Symbol.EOF)
 					System.out.println(lexAn.takeToken());
 			}
 
