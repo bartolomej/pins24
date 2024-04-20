@@ -406,8 +406,13 @@ public class LexAn implements AutoCloseable {
 				Report.warning("Unused arguments in the command line.");
 
 			try (LexAn lexAn = new LexAn(cmdLineArgs[0])) {
-				while (lexAn.peekToken().symbol() != Token.Symbol.EOF)
-					System.out.println(lexAn.takeToken());
+				while (true) {
+					Token token = lexAn.takeToken();
+					System.out.println(token);
+					if (token.symbol() == Token.Symbol.EOF) {
+						break;
+					}
+				}
 			}
 
 			// Upajmo, da kdaj pridemo to te tocke.
