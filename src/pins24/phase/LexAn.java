@@ -16,7 +16,7 @@ public class LexAn implements AutoCloseable {
 
 	/**
 	 * Ustvari nov leksikalni analizator.
-	 * 
+	 *
 	 * @param srcFileName Ime izvorne datoteke.
 	 */
 	public LexAn(final String srcFileName) {
@@ -38,33 +38,41 @@ public class LexAn implements AutoCloseable {
 	}
 
 	/** Trenutni znak izvorne datoteke (glej {@code nextChar}). */
-	private int buffChar = '\n';
+	private int buffChar = -2;
+
+	/** Vrstica začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharStartLine = 0;
+
+    private boolean shouldResetStartLocation = false;
 
 	/** Vrstica trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
 	private int buffCharLine = 0;
+
+	/** Stolpec začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharStartColumn = 0;
 
 	/** Stolpec trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
 	private int buffCharColumn = 0;
 
 	/**
 	 * Prebere naslednji znak izvorne datoteke.
-	 * 
+	 *
 	 * Izvorno datoteko beremo znak po znak. Trenutni znak izvorne datoteke je
 	 * shranjen v spremenljivki {@code buffChar}, vrstica in stolpec trenutnega
 	 * znaka izvorne datoteke sta shranjena v spremenljivkah {@code buffCharLine} in
 	 * {@code buffCharColumn}.
-	 * 
+	 *
 	 * Zacetne vrednosti {@code buffChar}, {@code buffCharLine} in
 	 * {@code buffCharColumn} so {@code '\n'}, {@code 0} in {@code 0}: branje prvega
 	 * znaka izvorne datoteke bo na osnovi vrednosti {@code '\n'} spremenljivke
 	 * {@code buffChar} prvemu znaku izvorne datoteke priredilo vrstico 1 in stolpec
 	 * 1.
-	 * 
+	 *
 	 * Pri branju izvorne datoteke se predpostavlja, da je v spremenljivki
 	 * {@code buffChar} ves "cas veljaven znak. Zunaj metode {@code nextChar} so vse
 	 * spremenljivke {@code buffChar}, {@code buffCharLine} in
 	 * {@code buffCharColumn} namenjene le branju.
-	 * 
+	 *
 	 * Vrednost {@code -1} v spremenljivki {@code buffChar} pomeni konec datoteke
 	 * (vrednosti spremenljivk {@code buffCharLine} in {@code buffCharColumn} pa
 	 * nista ve"c veljavni).
@@ -76,25 +84,34 @@ public class LexAn implements AutoCloseable {
 				buffChar = srcFile.read();
 				buffCharLine = buffChar == -1 ? 0 : 1;
 				buffCharColumn = buffChar == -1 ? 0 : 1;
-				return;
+                resetStartLocation();
+				break;
 			case -1: // Konec datoteke je bil "ze viden.
-				return;
+                buffCharLine = 0;
+                buffCharColumn = 0;
+				break;
 			case '\n': // Prejsnji znak je koncal vrstico, zacne se nova vrstica.
 				buffChar = srcFile.read();
 				buffCharLine = buffChar == -1 ? buffCharLine : buffCharLine + 1;
 				buffCharColumn = buffChar == -1 ? buffCharColumn : 1;
-				return;
+				break;
 			case '\t': // Prejsnji znak je tabulator, ta znak je morda potisnjen v desno.
 				buffChar = srcFile.read();
 				while (buffCharColumn % 8 != 0)
 					buffCharColumn += 1;
 				buffCharColumn += 1;
-				return;
+				break;
 			default: // Prejsnji znak je brez posebnosti.
 				buffChar = srcFile.read();
 				buffCharColumn += 1;
-				return;
+				break;
 			}
+
+            if (shouldResetStartLocation) {
+                buffCharStartLine = buffCharLine;
+                buffCharStartColumn = buffCharColumn;
+                shouldResetStartLocation = false;
+            }
 		} catch (IOException __) {
 			throw new Report.Error("Cannot read source file.");
 		}
@@ -102,7 +119,7 @@ public class LexAn implements AutoCloseable {
 
 	/**
 	 * Trenutni leksikalni simbol.
-	 * 
+	 *
 	 * "Ce vrednost spremenljivke {@code buffToken} ni {@code null}, je simbol "ze
 	 * prebran iz vhodne datoteke, ni pa "se predan naprej sintaksnemu analizatorju.
 	 * Ta simbol je dostopen z metodama {@code peekToken} in {@code takeToken}.
@@ -134,6 +151,7 @@ public class LexAn implements AutoCloseable {
 				case '\t':
 				case '\r':
 					nextChar();
+                    resetStartLocation();
 					break;
 				case '"':
 					nextChar();
@@ -142,7 +160,7 @@ public class LexAn implements AutoCloseable {
 						stringLexeme.append(getSingleCharLexeme());
 						nextChar();
 					}
-					this.buffToken = new Token(getCurrentLocation(), Token.Symbol.STRINGCONST, stringLexeme.toString());
+					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString());
 					nextChar();
 					break;
 				case '\'':
@@ -152,7 +170,7 @@ public class LexAn implements AutoCloseable {
 					if ((buffChar) != '\'') {
 						throw unexpectedTokenError();
 					}
-					this.buffToken = new Token(getCurrentLocation(), Token.Symbol.CHARCONST, charLexeme);
+					this.makeToken(Token.Symbol.CHARCONST, charLexeme);
 					nextChar();
 					break;
 				case ',':
@@ -240,6 +258,9 @@ public class LexAn implements AutoCloseable {
 					}
 					break;
 				case -1:
+                    buffCharColumn = 0;
+                    buffCharLine = 0;
+                    resetStartLocation();
 					makeToken(Token.Symbol.EOF);
 					break;
 				default:
@@ -253,6 +274,7 @@ public class LexAn implements AutoCloseable {
 			while (buffChar != '\n') {
 				nextChar();
 			}
+            resetStartLocation();
 		}
 	}
 
@@ -283,7 +305,7 @@ public class LexAn implements AutoCloseable {
 				if (decAsciiCode >= 32 && decAsciiCode <= 126) {
 					lexeme.append(Character.toString(decAsciiCode));
 				} else {
-					throw new Report.Error(getCurrentLocation(), "Char code " + decAsciiCode + " out of ASCII range {32...126}");
+					throw this.error("Char code " + decAsciiCode + " out of ASCII range {32...126}");
 				}
 
 			}
@@ -304,7 +326,7 @@ public class LexAn implements AutoCloseable {
             lexeme.append((char) buffChar);
             nextChar();
         }
-		this.buffToken = new Token(getCurrentLocation(), Token.Symbol.INTCONST, lexeme.toString());
+		this.makeToken(Token.Symbol.INTCONST, lexeme.toString());
 	}
 
 	private void tryReadKeywordOrIdentifierToken() {
@@ -329,7 +351,7 @@ public class LexAn implements AutoCloseable {
 			case "end" -> Token.Symbol.END;
 			default -> Token.Symbol.IDENTIFIER;
 		};
-		this.buffToken = new Token(getCurrentLocation(), symbol, lexeme.toString());
+        this.makeToken(symbol, lexeme.toString());
 	}
 
 	private Report.Error unexpectedTokenError() {
@@ -339,15 +361,37 @@ public class LexAn implements AutoCloseable {
             case '\r' -> "\\r";
             default -> (char)buffChar + "";
         };
-        return new Report.Error(getCurrentLocation(), "Unexpected token: " + charToPrint+ " (" + buffChar +")");
+        return this.error("Unexpected token: " + charToPrint+ " (" + buffChar +")");
 	}
 
-	private Report.Location getCurrentLocation() {
-		return new Report.Location(this.buffCharLine, this.buffCharColumn);
-	}
+    private Report.Error error(String message) {
+        return new Report.Error(
+                new Report.Location(
+                        this.buffCharLine,
+                        this.buffCharColumn
+                ),
+                message
+        );
+    }
 
-	private void makeToken(Token.Symbol symbol) {
-		this.buffToken = new Token(getCurrentLocation(), symbol, (char)buffChar + "");
+    private void resetStartLocation() {
+        buffCharStartColumn = buffCharColumn;
+        buffCharStartLine = buffCharLine;
+    }
+
+    private void makeToken(Token.Symbol symbol) {
+        this.makeToken(symbol, (char)buffChar + "");
+    }
+
+	private void makeToken(Token.Symbol symbol, String lexeme) {
+        Report.Location location = new Report.Location(
+                this.buffCharStartLine,
+                this.buffCharStartColumn,
+                this.buffCharLine,
+                this.buffCharColumn
+        );
+        this.buffToken = new Token(location, symbol, lexeme);
+        this.shouldResetStartLocation = true;
 	}
 
 	private void matchOrThrow(String regex) {
@@ -367,7 +411,7 @@ public class LexAn implements AutoCloseable {
 	/**
 	 * Vrne trenutni leksikalni simbol, ki ostane v lastnistvu leksikalnega
 	 * analizatorja.
-	 * 
+	 *
 	 * @return Leksikalni simbol.
 	 */
 	public Token peekToken() {
@@ -378,7 +422,7 @@ public class LexAn implements AutoCloseable {
 
 	/**
 	 * Vrne trenutni leksikalni simbol, ki preide v lastnistvo klicoce kode.
-	 * 
+	 *
 	 * @return Leksikalni simbol.
 	 */
 	public Token takeToken() {
@@ -393,7 +437,7 @@ public class LexAn implements AutoCloseable {
 
 	/**
 	 * Zagon leksikalnega analizatorja kot samostojnega programa.
-	 * 
+	 *
 	 * @param cmdLineArgs Argumenti v ukazni vrstici.
 	 */
 	public static void main(final String[] cmdLineArgs) {
