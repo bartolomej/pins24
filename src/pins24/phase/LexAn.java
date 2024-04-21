@@ -40,19 +40,31 @@ public class LexAn implements AutoCloseable {
 	/** Trenutni znak izvorne datoteke (glej {@code nextChar}). */
 	private int buffChar = -2;
 
-	/** Vrstica začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharStartLine = 0;
-
-    private boolean shouldResetStartLocation = false;
-
 	/** Vrstica trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
 	private int buffCharLine = 0;
+
+	/** Stolpec trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharColumn = 0;
+
+	/** Vrstica začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharStartLine = 0;
 
 	/** Stolpec začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
 	private int buffCharStartColumn = 0;
 
-	/** Stolpec trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharColumn = 0;
+	/** Prejšnja vrstica začetka znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharPrevStartLine = 0;
+
+	/** Prejšnji stolpec začetka znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharPrevStartColumn = 0;
+
+	/** Prejšnji stolpec znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharPrevColumn = 0;
+
+	/** Prejšnja vrstica znaka izvorne datoteke (glej {@code nextChar}). */
+	private int buffCharPrevLine = 0;
+
+	private boolean shouldResetStartLocation = false;
 
 	/**
 	 * Prebere naslednji znak izvorne datoteke.
@@ -78,6 +90,10 @@ public class LexAn implements AutoCloseable {
 	 * nista ve"c veljavni).
 	 */
 	private void nextChar() {
+		buffCharPrevLine = buffCharLine;
+		buffCharPrevColumn = buffCharColumn;
+		buffCharPrevStartLine = buffCharStartLine;
+		buffCharPrevStartColumn = buffCharStartColumn;
 		try {
 			switch (buffChar) {
 			case -2: // Noben znak "se ni bil prebran.
@@ -160,7 +176,7 @@ public class LexAn implements AutoCloseable {
 						stringLexeme.append(getSingleCharLexeme());
 						nextChar();
 					}
-					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString());
+					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString(), false);
 					nextChar();
 					break;
 				case '\'':
@@ -170,7 +186,7 @@ public class LexAn implements AutoCloseable {
 					if ((buffChar) != '\'') {
 						throw unexpectedTokenError();
 					}
-					this.makeToken(Token.Symbol.CHARCONST, charLexeme);
+					this.makeToken(Token.Symbol.CHARCONST, charLexeme, false);
 					nextChar();
 					break;
 				case ',':
@@ -227,7 +243,7 @@ public class LexAn implements AutoCloseable {
 						makeToken(Token.Symbol.EQU);
 						nextChar();
 					} else {
-						makeToken(Token.Symbol.ASSIGN);
+						makeToken(Token.Symbol.ASSIGN, true);
 					}
 					break;
 				case '!':
@@ -236,7 +252,7 @@ public class LexAn implements AutoCloseable {
 						makeToken(Token.Symbol.NEQ);
 						nextChar();
 					} else {
-						makeToken(Token.Symbol.NOT);
+						makeToken(Token.Symbol.NOT, true);
 					}
 					break;
 				case '>':
@@ -245,7 +261,7 @@ public class LexAn implements AutoCloseable {
 						makeToken(Token.Symbol.GEQ);
 						nextChar();
 					} else {
-						makeToken(Token.Symbol.GTH);
+						makeToken(Token.Symbol.GTH, true);
 					}
 					break;
 				case '<':
@@ -254,7 +270,7 @@ public class LexAn implements AutoCloseable {
 						makeToken(Token.Symbol.LEQ);
 						nextChar();
 					} else {
-						makeToken(Token.Symbol.LTH);
+						makeToken(Token.Symbol.LTH, true);
 					}
 					break;
 				case -1:
@@ -326,7 +342,7 @@ public class LexAn implements AutoCloseable {
             lexeme.append((char) buffChar);
             nextChar();
         }
-		this.makeToken(Token.Symbol.INTCONST, lexeme.toString());
+		this.makeToken(Token.Symbol.INTCONST, lexeme.toString(), true);
 	}
 
 	private void tryReadKeywordOrIdentifierToken() {
@@ -351,7 +367,7 @@ public class LexAn implements AutoCloseable {
 			case "end" -> Token.Symbol.END;
 			default -> Token.Symbol.IDENTIFIER;
 		};
-        this.makeToken(symbol, lexeme.toString());
+        this.makeToken(symbol, lexeme.toString(), true);
 	}
 
 	private Report.Error unexpectedTokenError() {
@@ -380,15 +396,19 @@ public class LexAn implements AutoCloseable {
     }
 
     private void makeToken(Token.Symbol symbol) {
-        this.makeToken(symbol, (char)buffChar + "");
+        this.makeToken(symbol, false);
     }
 
-	private void makeToken(Token.Symbol symbol, String lexeme) {
+	private void makeToken(Token.Symbol symbol, boolean usePreviousPosition) {
+		this.makeToken(symbol, (char)buffChar + "", usePreviousPosition);
+	}
+
+	private void makeToken(Token.Symbol symbol, String lexeme, boolean usePreviousPosition) {
         Report.Location location = new Report.Location(
-                this.buffCharStartLine,
-                this.buffCharStartColumn,
-                this.buffCharLine,
-                this.buffCharColumn
+                usePreviousPosition ? buffCharPrevStartLine : buffCharStartLine,
+                usePreviousPosition ? buffCharPrevStartColumn : buffCharStartColumn,
+                usePreviousPosition ? buffCharPrevLine : buffCharLine,
+                usePreviousPosition ? buffCharPrevColumn : buffCharColumn
         );
         this.buffToken = new Token(location, symbol, lexeme);
         this.shouldResetStartLocation = true;
