@@ -271,7 +271,7 @@ public class LexAn implements AutoCloseable {
 
 	private void trySwallowingComment() {
 		if (buffChar == '#') {
-			while (buffChar != '\n') {
+			while (buffChar != '\n' && buffChar != -1) {
 				nextChar();
 			}
             resetStartLocation();
