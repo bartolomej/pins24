@@ -1,1 +1,7 @@
-program
+fun test()
+fun test(a,b,c)
+var test =
+var test = 10
+var test = 10 * "10"
+var test = 10 * 10
+var test = 10 * '1'

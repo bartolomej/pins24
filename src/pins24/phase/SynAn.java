@@ -33,8 +33,10 @@ public class SynAn implements AutoCloseable {
 	 */
 	public Token check(Token.Symbol symbol) {
 		final Token token = lexAn.takeToken();
-		if (token.symbol() != symbol)
-			throw new Report.Error(token, "Unexpected symbol " +token.symbol() + ": '" + token.lexeme() + "'.");
+		if (token.symbol() != symbol) {
+			throw new Report.Error(token, "Unexpected symbol " + token.symbol() + ": '" + token.lexeme() + "'.");
+		}
+		System.out.println(symbol);
 		return token;
 	}
 
@@ -52,8 +54,141 @@ public class SynAn implements AutoCloseable {
 	 * Opravi sintaksno analizo celega programa.
 	 */
 	private void parseProgram() {
-		parseAssign(); // TODO: nadomesti z ustrezno metodo
-		return;
+		parseDefinitions();
+	}
+
+	private void parseDefinitions() {
+		while (true) {
+			switch (lexAn.peekToken().symbol()) {
+				case FUN -> parseFunDefinition();
+				case VAR -> parseVarDefinition();
+				default -> {
+					return;
+				}
+			}
+		}
+	}
+
+	private void parseFunDefinition() {
+		check(Token.Symbol.FUN);
+		check(Token.Symbol.IDENTIFIER);
+		check(Token.Symbol.LPAREN);
+		parseParameters();
+		check(Token.Symbol.RPAREN);
+		if (lexAn.peekToken().symbol() == Token.Symbol.ASSIGN) {
+			parseStatements();
+		}
+	}
+
+	private void parseParameters() {
+		if (lexAn.peekToken().symbol() != Token.Symbol.IDENTIFIER) {
+			return;
+		}
+		check(Token.Symbol.IDENTIFIER);
+		do {
+			if (lexAn.peekToken().symbol() == Token.Symbol.COMMA) {
+				check(Token.Symbol.COMMA);
+				check(Token.Symbol.IDENTIFIER);
+			}
+		} while (lexAn.peekToken().symbol() == Token.Symbol.COMMA);
+	}
+
+	private void parseStatements() {
+		do {
+			parseStatement();
+		} while (lexAn.peekToken().symbol() == Token.Symbol.COMMA);
+	}
+
+	private void parseStatement() {
+		switch (lexAn.peekToken().symbol()) {
+			case IF -> parseIfStatement();
+			case WHILE -> parseWhileStatement();
+			case LET -> parseLetStatement();
+			default -> parseExpressionOrAssignmentStatement();
+		}
+	}
+
+	private void parseIfStatement() {
+		check(Token.Symbol.IF);
+		parseExpression();
+		check(Token.Symbol.THEN);
+		parseStatements();
+
+		if (lexAn.peekToken().symbol() == Token.Symbol.ELSE) {
+			check(Token.Symbol.ELSE);
+			parseStatements();
+		}
+
+		check(Token.Symbol.END);
+	}
+
+	private void parseWhileStatement() {
+		  check(Token.Symbol.WHILE);
+		  parseExpression();
+		  check(Token.Symbol.DO);
+		  parseStatements();
+		  check(Token.Symbol.END);
+	}
+
+	private void parseLetStatement() {
+		check(Token.Symbol.LET);
+		parseDefinitions();
+		check(Token.Symbol.IN);
+		parseStatements();
+		check(Token.Symbol.END);
+	}
+
+	private void parseExpressionOrAssignmentStatement() {
+
+	}
+
+	private void parseExpression() {
+
+	}
+
+	private void parseVarDefinition() {
+		check(Token.Symbol.VAR);
+		check(Token.Symbol.IDENTIFIER);
+		check(Token.Symbol.ASSIGN);
+		parseInitializers();
+	}
+
+	private void parseInitializers() {
+		do {
+			parseInitializer();
+		} while (lexAn.peekToken().symbol() == Token.Symbol.COMMA);
+	}
+
+	private void parseInitializer() {
+		if (lexAn.peekToken().symbol() == Token.Symbol.INTCONST) {
+			check(Token.Symbol.INTCONST);
+			if (lexAn.peekToken().symbol() == Token.Symbol.MUL) {
+				check(Token.Symbol.MUL);
+				parseConst(false);
+			}
+		} else {
+			parseConst(true);
+		}
+	}
+
+	private void parseConst(boolean isOptional) {
+		boolean isMatch = false;
+		if (lexAn.peekToken().symbol() == Token.Symbol.INTCONST) {
+			check(Token.Symbol.INTCONST);
+			isMatch = true;
+		}
+		if (lexAn.peekToken().symbol() == Token.Symbol.CHARCONST) {
+			check(Token.Symbol.CHARCONST);
+			isMatch = true;
+		}
+		if (lexAn.peekToken().symbol() == Token.Symbol.STRINGCONST) {
+			check(Token.Symbol.STRINGCONST);
+			isMatch = true;
+		}
+
+		if (!isMatch && !isOptional) {
+			throw new Report.Error(lexAn.peekToken(), "Expected any of tokens: INTCONST, CHARCONST, STRINGCONST");
+		}
 	}
 
 	/*
@@ -139,6 +274,7 @@ public class SynAn implements AutoCloseable {
 		} catch (Report.Error error) {
 			// Izpis opisa napake.
 			System.err.println(error.getMessage());
+			error.printStackTrace();
 			System.exit(1);
 		}
 	}

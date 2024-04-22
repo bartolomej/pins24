@@ -1,0 +1,48 @@
+program -> definitions .
+
+definitions -> definition definitions_rest .
+definitions_rest -> definitions .
+definitions_rest -> .
+
+definition -> fun_definition .
+definition -> var_definition .
+
+fun_definition -> fun identifier "(" parameters ")" fun_definition_rest .
+fun_definition_rest -> "=" statements .
+fun_definition_rest -> .
+
+parameters -> identifier parameters_rest .
+parameters_rest -> "," parameters .
+parameters_rest -> .
+
+var_definition -> var identifier "=" initializers .
+
+initializers -> initializer initializers_rest .
+initializers_rest -> "," initializers .
+initializers_rest -> .
+
+initializer -> int_const initializer_rest .
+initializer -> char_const .
+initializer -> string_const .
+initializer_rest -> "*" const .
+initializer_rest -> .
+
+const -> int_const | char_const | string_const .
+
+statements -> statement statements_rest .
+statements_rest -> "," statements .
+statements_rest -> .
+
+statement -> expression_or_assignment | if_expression | while_expression | let expression .
+
+if_statement -> "if" expression "then" statements optional_else "end" .
+optional_else -> "else" statements .
+optional_else -> .
+
+while_expression -> "while" expression "do" statements "end" .
+
+let_expression -> "let" definitions "in" statements "end" .
+
+expression_or_assignment -> expression optional_assignment .
+optional_assignment -> "=" expression .
+optional_assignment -> .
