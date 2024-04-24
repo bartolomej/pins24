@@ -25,14 +25,13 @@ public class SynAn implements AutoCloseable {
 	}
 
 	/**
-	 * TODO: Rename to `consume`, add `match` helper
 	 * Prevzame leksikalni analizator od leksikalnega analizatorja in preveri, ali
 	 * je prave vrste.
 	 * 
 	 * @param symbol Pricakovana vrsta leksikalnega simbola.
 	 * @return Prevzeti leksikalni simbol.
 	 */
-	public Token check(Token.Symbol symbol) {
+	private Token consume(Token.Symbol symbol) {
 		final Token token = lexAn.takeToken();
 		if (token.symbol() != symbol) {
 			throw new Report.Error(token, "Unexpected symbol " + token.symbol() + ": '" + token.lexeme() + "'.");
@@ -41,12 +40,16 @@ public class SynAn implements AutoCloseable {
 		return token;
 	}
 
+	private boolean match(Token.Symbol expectedSymbol) {
+		return lexAn.peekToken().symbol() == expectedSymbol;
+	}
+
 	/**
 	 * Opravi sintaksno analizo.
 	 */
 	public void parse() {
 		parseProgram();
-		if (lexAn.peekToken().symbol() != Token.Symbol.EOF)
+		if (!match(Token.Symbol.EOF))
 			Report.warning(lexAn.peekToken(),
 					"Unexpected text '" + lexAn.peekToken().lexeme() + "...' at the end of the program.");
 	}
@@ -71,33 +74,33 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseFunDefinition() {
-		check(Token.Symbol.FUN);
-		check(Token.Symbol.IDENTIFIER);
-		check(Token.Symbol.LPAREN);
+		consume(Token.Symbol.FUN);
+		consume(Token.Symbol.IDENTIFIER);
+		consume(Token.Symbol.LPAREN);
 		parseParameters();
-		check(Token.Symbol.RPAREN);
-		if (lexAn.peekToken().symbol() == Token.Symbol.ASSIGN) {
+		consume(Token.Symbol.RPAREN);
+		if (match(Token.Symbol.ASSIGN)) {
 			parseStatements();
 		}
 	}
 
 	private void parseParameters() {
-		if (lexAn.peekToken().symbol() != Token.Symbol.IDENTIFIER) {
+		if (!match(Token.Symbol.IDENTIFIER)) {
 			return;
 		}
-		check(Token.Symbol.IDENTIFIER);
+		consume(Token.Symbol.IDENTIFIER);
 		do {
-			if (lexAn.peekToken().symbol() == Token.Symbol.COMMA) {
-				check(Token.Symbol.COMMA);
-				check(Token.Symbol.IDENTIFIER);
+			if (match(Token.Symbol.COMMA)) {
+				consume(Token.Symbol.COMMA);
+				consume(Token.Symbol.IDENTIFIER);
 			}
-		} while (lexAn.peekToken().symbol() == Token.Symbol.COMMA);
+		} while (match(Token.Symbol.COMMA));
 	}
 
 	private void parseStatements() {
 		do {
 			parseStatement();
-		} while (lexAn.peekToken().symbol() == Token.Symbol.COMMA);
+		} while (match(Token.Symbol.COMMA));
 	}
 
 	private void parseStatement() {
@@ -110,33 +113,33 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseIfStatement() {
-		check(Token.Symbol.IF);
+		consume(Token.Symbol.IF);
 		parseExpression();
-		check(Token.Symbol.THEN);
+		consume(Token.Symbol.THEN);
 		parseStatements();
 
-		if (lexAn.peekToken().symbol() == Token.Symbol.ELSE) {
-			check(Token.Symbol.ELSE);
+		if (match(Token.Symbol.ELSE)) {
+			consume(Token.Symbol.ELSE);
 			parseStatements();
 		}
 
-		check(Token.Symbol.END);
+		consume(Token.Symbol.END);
 	}
 
 	private void parseWhileStatement() {
-		  check(Token.Symbol.WHILE);
+		  consume(Token.Symbol.WHILE);
 		  parseExpression();
-		  check(Token.Symbol.DO);
+		  consume(Token.Symbol.DO);
 		  parseStatements();
-		  check(Token.Symbol.END);
+		  consume(Token.Symbol.END);
 	}
 
 	private void parseLetStatement() {
-		check(Token.Symbol.LET);
+		consume(Token.Symbol.LET);
 		parseDefinitions();
-		check(Token.Symbol.IN);
+		consume(Token.Symbol.IN);
 		parseStatements();
-		check(Token.Symbol.END);
+		consume(Token.Symbol.END);
 	}
 
 	private void parseExpressionOrAssignmentStatement() {
@@ -148,23 +151,23 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseVarDefinition() {
-		check(Token.Symbol.VAR);
-		check(Token.Symbol.IDENTIFIER);
-		check(Token.Symbol.ASSIGN);
+		consume(Token.Symbol.VAR);
+		consume(Token.Symbol.IDENTIFIER);
+		consume(Token.Symbol.ASSIGN);
 		parseInitializers();
 	}
 
 	private void parseInitializers() {
 		do {
 			parseInitializer();
-		} while (lexAn.peekToken().symbol() == Token.Symbol.COMMA);
+		} while (match(Token.Symbol.COMMA));
 	}
 
 	private void parseInitializer() {
-		if (lexAn.peekToken().symbol() == Token.Symbol.INTCONST) {
-			check(Token.Symbol.INTCONST);
-			if (lexAn.peekToken().symbol() == Token.Symbol.MUL) {
-				check(Token.Symbol.MUL);
+		if (match(Token.Symbol.INTCONST)) {
+			consume(Token.Symbol.INTCONST);
+			if (match(Token.Symbol.MUL)) {
+				consume(Token.Symbol.MUL);
 				parseConst(false);
 			}
 		} else {
@@ -174,16 +177,16 @@ public class SynAn implements AutoCloseable {
 
 	private void parseConst(boolean isOptional) {
 		boolean isMatch = false;
-		if (lexAn.peekToken().symbol() == Token.Symbol.INTCONST) {
-			check(Token.Symbol.INTCONST);
+		if (match(Token.Symbol.INTCONST)) {
+			consume(Token.Symbol.INTCONST);
 			isMatch = true;
 		}
-		if (lexAn.peekToken().symbol() == Token.Symbol.CHARCONST) {
-			check(Token.Symbol.CHARCONST);
+		if (match(Token.Symbol.CHARCONST)) {
+			consume(Token.Symbol.CHARCONST);
 			isMatch = true;
 		}
-		if (lexAn.peekToken().symbol() == Token.Symbol.STRINGCONST) {
-			check(Token.Symbol.STRINGCONST);
+		if (match(Token.Symbol.STRINGCONST)) {
+			consume(Token.Symbol.STRINGCONST);
 			isMatch = true;
 		}
 
@@ -210,8 +213,8 @@ public class SynAn implements AutoCloseable {
 	private void parseAssign() {
 		switch (lexAn.peekToken().symbol()) {
 		case IDENTIFIER:
-			check(Token.Symbol.IDENTIFIER);
-			check(Token.Symbol.ASSIGN);
+			consume(Token.Symbol.IDENTIFIER);
+			consume(Token.Symbol.ASSIGN);
 			parseVal();
 			return;
 		default:
@@ -222,7 +225,7 @@ public class SynAn implements AutoCloseable {
 	private void parseVal() {
 		switch (lexAn.peekToken().symbol()) {
 		case INTCONST:
-			check(Token.Symbol.INTCONST);
+			consume(Token.Symbol.INTCONST);
 			parseAdds();
 			return;
 		default:
@@ -233,11 +236,11 @@ public class SynAn implements AutoCloseable {
 	private void parseAdds() {
 		switch (lexAn.peekToken().symbol()) {
 		case ADD:
-			check(Token.Symbol.ADD);
+			consume(Token.Symbol.ADD);
 			parseAdds();
 			return;
 		case SUB:
-			check(Token.Symbol.SUB);
+			consume(Token.Symbol.SUB);
 			parseAdds();
 			return;
 		case EOF:
