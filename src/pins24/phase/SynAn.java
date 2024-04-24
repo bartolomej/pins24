@@ -31,13 +31,13 @@ public class SynAn implements AutoCloseable {
 	 * Prevzame leksikalni analizator od leksikalnega analizatorja in preveri, ali
 	 * je prave vrste.
 	 *
-	 * @param symbol Pricakovana vrsta leksikalnega simbola.
+	 * @param expectedSymbol Pricakovana vrsta leksikalnega simbola.
 	 * @return Prevzeti leksikalni simbol.
 	 */
-	private Token consume(Token.Symbol symbol) {
+	private Token consume(Token.Symbol expectedSymbol) {
 		final Token token = lexAn.takeToken();
-		if (token.symbol() != symbol) {
-			throw new Report.Error(token, "Unexpected symbol " + token.symbol() + ": '" + token.lexeme() + "'.");
+		if (token.symbol() != expectedSymbol) {
+			throw new Report.Error(token, "Expected " + expectedSymbol + " got " + token.symbol() + " '" + token.lexeme() + "'");
 		}
 		System.out.println(token);
 		return token;
@@ -319,21 +319,6 @@ public class SynAn implements AutoCloseable {
                 Token.Symbol.STRINGCONST
         ), isOptional);
 	}
-
-	/*
-	 * Metode parseAssign, parseVal in parseAdds predstavljajo
-	 * implementacijo sintaksnega analizatorja za gramatiko
-	 *
-	 * assign -> ID ASSIGN val .
-	 * val -> INTCONST ops .
-	 * ops -> .
-	 * ops -> ADD ops .
-         * ops -> SUB ops .
-	 *
-	 * Te produkcije _niso_ del gramatike za PINS'24, ampak
-	 * so namenjene zgolj in samo ilustraciji, kako se
-	 * napise majhen sintaksni analizator.
-	 */
 
 	/**
 	 * Zagon sintaksnega analizatorja kot samostojnega programa.

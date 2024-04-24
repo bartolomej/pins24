@@ -1,4 +1,2 @@
-fun f5() =
-    if 10 > 0 then
-        x = add(x, y, z)
-    end
+fun f6() =
+    y = (x * y || y /z) || z%w
