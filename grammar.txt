@@ -46,3 +46,16 @@ let_expression -> "let" definitions "in" statements "end" .
 expression_or_assignment -> expression optional_assignment .
 optional_assignment -> "=" expression .
 optional_assignment -> .
+
+expression -> disjunction_expression .
+disjunction_expression -> conjunction_expression "||" conjunction_expression .
+conjunction_expression -> comparative_expression "&&" comparative_expression .
+comparative_expression -> additive_expression "==" additive_expression .
+additive_expression -> additive_expression "+" multiplicative_expression .
+additive_expression -> multiplicative_expression .
+multiplicative_expression -> multiplicative_expression "*" prefix_expression .
+multiplicative_expression -> prefix_expression .
+prefix_expression -> "!" postfix_expression .
+postfix_expression -> const_expression "^" .
+const_expression -> "(" expression ")" .
+const_expression -> const .
