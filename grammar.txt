@@ -48,14 +48,22 @@ optional_assignment -> "=" expression .
 optional_assignment -> .
 
 expression -> disjunction .
-disjunction -> conjunction "||" conjunction .
-conjunction -> comparative "&&" comparison .
-comparison -> additive "==" additive .
+disjunction -> conjunction disjunction_1 .
+disjunction_1 -> "||" conjunction .
+disjunction_1 -> .
+conjunction -> comparison .
+conjunction_1 -> "&&" comparison .
+conjunction_1 -> .
+comparison -> addition comparison_1 .
+comparison_1 -> "==" addition .
+comparison_1 -> .
 addition -> addition "+" multiplication .
 addition -> multiplication .
 multiplication -> multiplication "*" prefix .
 multiplication -> prefix .
 prefix -> "!" postfix .
+prefix -> postfix .
 postfix -> const_or_grouping "^" .
+postfix -> const_or_grouping .
 const_or_grouping -> "(" expression ")" .
 const_or_grouping -> const .
