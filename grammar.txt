@@ -33,21 +33,25 @@ statements -> statement statements_rest .
 statements_rest -> "," statements .
 statements_rest -> .
 
-statement -> expression_or_assignment | if_expression | while_expression | let expression .
+statement -> expression_or_assignment | if_statement | while_statement | let_statement .
 
 if_statement -> "if" expression "then" statements optional_else "end" .
 optional_else -> "else" statements .
 optional_else -> .
 
-while_expression -> "while" expression "do" statements "end" .
+while_statement -> "while" expression "do" statements "end" .
 
-let_expression -> "let" definitions "in" statements "end" .
+let_statement -> "let" definitions "in" statements "end" .
 
 expression_or_assignment -> expression optional_assignment .
 optional_assignment -> "=" expression .
 optional_assignment -> .
 
 expression -> disjunction .
+expression -> function_call .
+
+function_call -> identifier "(" arguments ")" .
+
 disjunction -> conjunction disjunction_1 .
 disjunction_1 -> "||" conjunction .
 disjunction_1 -> .
@@ -56,6 +60,11 @@ conjunction_1 -> "&&" comparison .
 conjunction_1 -> .
 comparison -> addition comparison_1 .
 comparison_1 -> "==" addition .
+comparison_1 -> "!=" addition .
+comparison_1 -> "<" addition .
+comparison_1 -> ">" addition .
+comparison_1 -> "<=" addition .
+comparison_1 -> ">=" addition .
 comparison_1 -> .
 addition -> multiplication addition_1 .
 addition_1 -> "+" multiplication addition_1 .
@@ -64,8 +73,12 @@ addition_1 -> .
 multiplication -> prefix multiplication_1.
 multiplication_1 -> "*" prefix multiplication_1 .
 multiplication_1 -> "/" prefix multiplication_1 .
+multiplication_1 -> "%" prefix multiplication_1 .
 multiplication_1 -> .
 prefix -> "!" postfix .
+prefix -> "+" postfix .
+prefix -> "-" postfix .
+prefix -> "^" postfix .
 prefix -> postfix .
 postfix -> const_or_grouping postfix_1 .
 postfix_1 -> "^" .
