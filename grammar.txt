@@ -72,11 +72,11 @@ multiplication_1 -> "*" prefix multiplication_1 .
 multiplication_1 -> "/" prefix multiplication_1 .
 multiplication_1 -> "%" prefix multiplication_1 .
 multiplication_1 -> .
-prefix -> "!" postfix .
-prefix -> "+" postfix .
-prefix -> "-" postfix .
-prefix -> "^" postfix .
-prefix -> postfix .
+prefix -> "!" prefix .
+prefix -> "+" prefix .
+prefix -> "-" prefix .
+prefix -> "^" prefix .
+prefix -> postfix.
 postfix -> const_or_grouping postfix_1 .
 postfix_1 -> "^" .
 postfix_1 -> .

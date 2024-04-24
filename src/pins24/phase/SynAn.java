@@ -56,7 +56,7 @@ public class SynAn implements AutoCloseable {
         if (isOptional) {
             return null;
         } else {
-            String allSymbols = expectedSymbols.stream().reduce("", (agg, symbol) -> agg + ", " + symbol.toString(), String::concat);
+            String allSymbols = Arrays.toString(expectedSymbols.stream().map(Enum::toString).toArray());
             throw new Report.Error(lexAn.peekToken(), "Expected any of tokens: " + allSymbols);
         }
     }
@@ -231,13 +231,18 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parsePrefixExpression(boolean isOptional) {
-        consumeAnyOf(Arrays.asList(
+        Token prefixOperator = consumeAnyOf(Arrays.asList(
                 Token.Symbol.NOT,
                 Token.Symbol.ADD,
                 Token.Symbol.SUB,
                 Token.Symbol.PTR
         ), true);
-		parsePostfixExpression(isOptional);
+
+		if (prefixOperator == null) {
+			parsePostfixExpression(isOptional);
+		} else {
+			parsePrefixExpression(isOptional);
+		}
 	}
 
 	private void parsePostfixExpression(boolean isOptional) {
