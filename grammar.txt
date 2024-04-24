@@ -51,19 +51,24 @@ expression -> disjunction .
 disjunction -> conjunction disjunction_1 .
 disjunction_1 -> "||" conjunction .
 disjunction_1 -> .
-conjunction -> comparison .
+conjunction -> comparison conjunction_1 .
 conjunction_1 -> "&&" comparison .
 conjunction_1 -> .
 comparison -> addition comparison_1 .
 comparison_1 -> "==" addition .
 comparison_1 -> .
-addition -> addition "+" multiplication .
-addition -> multiplication .
-multiplication -> multiplication "*" prefix .
-multiplication -> prefix .
+addition -> multiplication addition_1 .
+addition_1 -> "+" multiplication addition_1 .
+addition_1 -> "-" multiplication addition_1 .
+addition_1 -> .
+multiplication -> prefix multiplication_1.
+multiplication_1 -> "*" prefix multiplication_1 .
+multiplication_1 -> "/" prefix multiplication_1 .
+multiplication_1 -> .
 prefix -> "!" postfix .
 prefix -> postfix .
-postfix -> const_or_grouping "^" .
-postfix -> const_or_grouping .
+postfix -> const_or_grouping postfix_1 .
+postfix_1 -> "^" .
+postfix_1 -> .
 const_or_grouping -> "(" expression ")" .
 const_or_grouping -> const .
