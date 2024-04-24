@@ -47,15 +47,15 @@ expression_or_assignment -> expression optional_assignment .
 optional_assignment -> "=" expression .
 optional_assignment -> .
 
-expression -> disjunction_expression .
-disjunction_expression -> conjunction_expression "||" conjunction_expression .
-conjunction_expression -> comparative_expression "&&" comparative_expression .
-comparative_expression -> additive_expression "==" additive_expression .
-additive_expression -> additive_expression "+" multiplicative_expression .
-additive_expression -> multiplicative_expression .
-multiplicative_expression -> multiplicative_expression "*" prefix_expression .
-multiplicative_expression -> prefix_expression .
-prefix_expression -> "!" postfix_expression .
-postfix_expression -> const_expression "^" .
-const_expression -> "(" expression ")" .
-const_expression -> const .
+expression -> disjunction .
+disjunction -> conjunction "||" conjunction .
+conjunction -> comparative "&&" comparison .
+comparison -> additive "==" additive .
+addition -> addition "+" multiplication .
+addition -> multiplication .
+multiplication -> multiplication "*" prefix .
+multiplication -> prefix .
+prefix -> "!" postfix .
+postfix -> const_or_grouping "^" .
+const_or_grouping -> "(" expression ")" .
+const_or_grouping -> const .

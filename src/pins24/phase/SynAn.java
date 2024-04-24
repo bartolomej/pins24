@@ -25,6 +25,7 @@ public class SynAn implements AutoCloseable {
 	}
 
 	/**
+	 * TODO: Rename to `consume`, add `match` helper
 	 * Prevzame leksikalni analizator od leksikalnega analizatorja in preveri, ali
 	 * je prave vrste.
 	 * 
