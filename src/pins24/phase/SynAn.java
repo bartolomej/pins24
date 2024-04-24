@@ -2,6 +2,9 @@ package pins24.phase;
 
 import pins24.common.*;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Sintaksni analizator.
  */
@@ -12,7 +15,7 @@ public class SynAn implements AutoCloseable {
 
 	/**
 	 * Ustvari nov sintaksni analizator.
-	 * 
+	 *
 	 * @param srcFileName ime izvorne datoteke.
 	 */
 	public SynAn(final String srcFileName) {
@@ -27,7 +30,7 @@ public class SynAn implements AutoCloseable {
 	/**
 	 * Prevzame leksikalni analizator od leksikalnega analizatorja in preveri, ali
 	 * je prave vrste.
-	 * 
+	 *
 	 * @param symbol Pricakovana vrsta leksikalnega simbola.
 	 * @return Prevzeti leksikalni simbol.
 	 */
@@ -39,6 +42,24 @@ public class SynAn implements AutoCloseable {
 		System.out.println(symbol);
 		return token;
 	}
+
+    /**
+     * Returns `null` if `isOptional=true` and no token is consumed.
+     */
+    private Token consumeAnyOf(List<Token.Symbol> expectedSymbols, boolean isOptional) {
+        for (Token.Symbol symbol : expectedSymbols) {
+            if (match(symbol)) {
+                return consume(symbol);
+            }
+        }
+
+        if (isOptional) {
+            return null;
+        } else {
+            String allSymbols = expectedSymbols.stream().reduce("", (agg, symbol) -> agg + ", " + symbol.toString(), String::concat);
+            throw new Report.Error(lexAn.peekToken(), "Expected any of tokens: " + allSymbols);
+        }
+    }
 
 	private boolean match(Token.Symbol expectedSymbol) {
 		return lexAn.peekToken().symbol() == expectedSymbol;
@@ -64,7 +85,7 @@ public class SynAn implements AutoCloseable {
 	private void parseDefinitions() {
 		while (true) {
 			switch (lexAn.peekToken().symbol()) {
-				case FUN -> parseFunDefinition();
+				case FUN -> parseFunctionDefinition();
 				case VAR -> parseVarDefinition();
 				default -> {
 					return;
@@ -73,13 +94,14 @@ public class SynAn implements AutoCloseable {
 		}
 	}
 
-	private void parseFunDefinition() {
+	private void parseFunctionDefinition() {
 		consume(Token.Symbol.FUN);
 		consume(Token.Symbol.IDENTIFIER);
 		consume(Token.Symbol.LPAREN);
 		parseParameters();
 		consume(Token.Symbol.RPAREN);
 		if (match(Token.Symbol.ASSIGN)) {
+			consume(Token.Symbol.ASSIGN);
 			parseStatements();
 		}
 	}
@@ -114,7 +136,7 @@ public class SynAn implements AutoCloseable {
 
 	private void parseIfStatement() {
 		consume(Token.Symbol.IF);
-		parseExpression();
+		parseExpression(false);
 		consume(Token.Symbol.THEN);
 		parseStatements();
 
@@ -128,7 +150,7 @@ public class SynAn implements AutoCloseable {
 
 	private void parseWhileStatement() {
 		  consume(Token.Symbol.WHILE);
-		  parseExpression();
+		  parseExpression(false);
 		  consume(Token.Symbol.DO);
 		  parseStatements();
 		  consume(Token.Symbol.END);
@@ -143,11 +165,114 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseExpressionOrAssignmentStatement() {
-
+		parseExpression(false);
+		if (match(Token.Symbol.ASSIGN)) {
+			consume(Token.Symbol.ASSIGN);
+			parseExpression(false);
+		}
 	}
 
-	private void parseExpression() {
+	private void parseExpression(boolean isOptional) {
+		parseDisjunctionExpression(isOptional);
+	}
 
+	private void parseDisjunctionExpression(boolean isOptional) {
+		parseConjunctionExpression(isOptional);
+		if (match(Token.Symbol.OR)) {
+			consume(Token.Symbol.OR);
+			parseConjunctionExpression(isOptional);
+		}
+	}
+
+	private void parseConjunctionExpression(boolean isOptional) {
+		parseComparisonExpression(isOptional);
+		if (match(Token.Symbol.AND)) {
+			consume(Token.Symbol.AND);
+			parseComparisonExpression(isOptional);
+		}
+	}
+
+	private void parseComparisonExpression(boolean isOptional) {
+		parseAdditionExpression(isOptional);
+        Token comparisonToken = consumeAnyOf(Arrays.asList(
+                Token.Symbol.EQU,
+                Token.Symbol.NEQ,
+                Token.Symbol.GTH,
+                Token.Symbol.LTH,
+                Token.Symbol.GEQ,
+                Token.Symbol.LEQ
+        ), true);
+        if (comparisonToken != null) {
+            parseAdditionExpression(isOptional);
+        }
+	}
+
+	private void parseAdditionExpression(boolean isOptional) {
+        parseMultiplicationExpression(isOptional);
+        Token comparisonToken = consumeAnyOf(Arrays.asList(
+                Token.Symbol.ADD,
+                Token.Symbol.SUB
+        ), true);
+        if (comparisonToken != null) {
+            parseMultiplicationExpression(isOptional);
+        }
+	}
+
+	private void parseMultiplicationExpression(boolean isOptional) {
+        parsePrefixExpression(isOptional);
+        Token comparisonToken = consumeAnyOf(Arrays.asList(
+                Token.Symbol.MUL,
+                Token.Symbol.DIV,
+                Token.Symbol.MOD
+        ), true);
+        if (comparisonToken != null) {
+            parsePrefixExpression(isOptional);
+        }
+	}
+
+	private void parsePrefixExpression(boolean isOptional) {
+        consumeAnyOf(Arrays.asList(
+                Token.Symbol.NOT,
+                Token.Symbol.ADD,
+                Token.Symbol.SUB,
+                Token.Symbol.PTR
+        ), true);
+		parsePostfixExpression(isOptional);
+	}
+
+	private void parsePostfixExpression(boolean isOptional) {
+        parseConstOrGroupExpression(isOptional);
+
+        if (match(Token.Symbol.PTR)) {
+            consume(Token.Symbol.PTR);
+        }
+	}
+
+    private void parseConstOrGroupExpression(boolean isOptional) {
+        if (match(Token.Symbol.LPAREN)) {
+            consume(Token.Symbol.LPAREN);
+            parseExpression(false);
+            consume(Token.Symbol.RPAREN);
+        } else if (match(Token.Symbol.IDENTIFIER)) {
+			parseFunctionCallOrVariableAccessExpression();
+		} else {
+            parseConst(isOptional);
+        }
+    }
+
+	private void parseFunctionCallOrVariableAccessExpression() {
+		consume(Token.Symbol.IDENTIFIER);
+		if (match(Token.Symbol.LPAREN)) {
+			consume(Token.Symbol.LPAREN);
+			parseArguments();
+			consume(Token.Symbol.RPAREN);
+		}
+	}
+
+	private void parseArguments() {
+		do {
+			parseExpression(true);
+		} while (match(Token.Symbol.RPAREN));
 	}
 
 	private void parseVarDefinition() {
@@ -176,23 +301,11 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseConst(boolean isOptional) {
-		boolean isMatch = false;
-		if (match(Token.Symbol.INTCONST)) {
-			consume(Token.Symbol.INTCONST);
-			isMatch = true;
-		}
-		if (match(Token.Symbol.CHARCONST)) {
-			consume(Token.Symbol.CHARCONST);
-			isMatch = true;
-		}
-		if (match(Token.Symbol.STRINGCONST)) {
-			consume(Token.Symbol.STRINGCONST);
-			isMatch = true;
-		}
-
-		if (!isMatch && !isOptional) {
-			throw new Report.Error(lexAn.peekToken(), "Expected any of tokens: INTCONST, CHARCONST, STRINGCONST");
-		}
+		consumeAnyOf(Arrays.asList(
+                Token.Symbol.INTCONST,
+                Token.Symbol.CHARCONST,
+                Token.Symbol.STRINGCONST
+        ), isOptional);
 	}
 
 	/*
@@ -204,7 +317,7 @@ public class SynAn implements AutoCloseable {
 	 * ops -> .
 	 * ops -> ADD ops .
          * ops -> SUB ops .
-	 * 
+	 *
 	 * Te produkcije _niso_ del gramatike za PINS'24, ampak
 	 * so namenjene zgolj in samo ilustraciji, kako se
 	 * napise majhen sintaksni analizator.
@@ -254,7 +367,7 @@ public class SynAn implements AutoCloseable {
 
 	/**
 	 * Zagon sintaksnega analizatorja kot samostojnega programa.
-	 * 
+	 *
 	 * @param cmdLineArgs Argumenti v ukazni vrstici.
 	 */
 	public static void main(final String[] cmdLineArgs) {

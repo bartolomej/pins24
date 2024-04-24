@@ -1,7 +1,4 @@
-fun test()
-fun test(a,b,c)
-var test =
-var test = 10
-var test = 10 * "10"
-var test = 10 * 10
-var test = 10 * '1'
+fun f7() =
+    while x > 10 do
+        x = x - 1
+        end

@@ -48,11 +48,6 @@ optional_assignment -> "=" expression .
 optional_assignment -> .
 
 expression -> disjunction .
-expression -> function_call .
-
-function_call_or_variable_access -> identifier optional_function_call .
-optional_function_call -> "(" arguments ")" .
-optional_function_call -> .
 
 disjunction -> conjunction disjunction_1 .
 disjunction_1 -> "||" conjunction .
@@ -87,3 +82,12 @@ postfix_1 -> "^" .
 postfix_1 -> .
 const_or_grouping -> "(" expression ")" .
 const_or_grouping -> const .
+const_or_grouping -> function_call_or_variable_access .
+
+function_call_or_variable_access -> identifier optional_function_call .
+optional_function_call -> "(" arguments ")" .
+optional_function_call -> .
+arguments -> expression arguments_1 .
+arguments -> .
+arguments_1 -> "," expression arguments_1 .
+arguments_1 -> .
