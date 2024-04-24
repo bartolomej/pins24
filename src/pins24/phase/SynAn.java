@@ -57,7 +57,7 @@ public class SynAn implements AutoCloseable {
             return null;
         } else {
             String allSymbols = Arrays.toString(expectedSymbols.stream().map(Enum::toString).toArray());
-            throw new Report.Error(lexAn.peekToken(), "Expected any of tokens: " + allSymbols);
+            throw new Report.Error(lexAn.peekToken(), "Expected any of tokens " + allSymbols + " got " + lexAn.peekToken());
         }
     }
 
@@ -121,6 +121,9 @@ public class SynAn implements AutoCloseable {
 
 	private void parseStatements() {
 		do {
+			if (match(Token.Symbol.COMMA)) {
+				consume(Token.Symbol.COMMA);
+			}
 			parseStatement();
 		} while (match(Token.Symbol.COMMA));
 	}
@@ -327,48 +330,6 @@ public class SynAn implements AutoCloseable {
 	 * so namenjene zgolj in samo ilustraciji, kako se
 	 * napise majhen sintaksni analizator.
 	 */
-
-	private void parseAssign() {
-		switch (lexAn.peekToken().symbol()) {
-		case IDENTIFIER:
-			consume(Token.Symbol.IDENTIFIER);
-			consume(Token.Symbol.ASSIGN);
-			parseVal();
-			return;
-		default:
-			throw new Report.Error(lexAn.peekToken(), "An identifier expected.");
-		}
-	}
-
-	private void parseVal() {
-		switch (lexAn.peekToken().symbol()) {
-		case INTCONST:
-			consume(Token.Symbol.INTCONST);
-			parseAdds();
-			return;
-		default:
-			throw new Report.Error(lexAn.peekToken(), "An integer constant expected.");
-		}
-	}
-
-	private void parseAdds() {
-		switch (lexAn.peekToken().symbol()) {
-		case ADD:
-			consume(Token.Symbol.ADD);
-			parseAdds();
-			return;
-		case SUB:
-			consume(Token.Symbol.SUB);
-			parseAdds();
-			return;
-		case EOF:
-			return;
-		default:
-			throw new Report.Error(lexAn.peekToken(), "An operator expected.");
-		}
-	}
-
-	// --- ZAGON ---
 
 	/**
 	 * Zagon sintaksnega analizatorja kot samostojnega programa.
