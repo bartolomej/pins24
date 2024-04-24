@@ -50,7 +50,9 @@ optional_assignment -> .
 expression -> disjunction .
 expression -> function_call .
 
-function_call -> identifier "(" arguments ")" .
+function_call_or_variable_access -> identifier optional_function_call .
+optional_function_call -> "(" arguments ")" .
+optional_function_call -> .
 
 disjunction -> conjunction disjunction_1 .
 disjunction_1 -> "||" conjunction .
