@@ -180,19 +180,19 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseDisjunctionExpression(boolean isOptional) {
-		parseConjunctionExpression(isOptional);
-		if (match(Token.Symbol.OR)) {
-			consume(Token.Symbol.OR);
+		Token disjunctionToken;
+		do {
 			parseConjunctionExpression(isOptional);
-		}
+			disjunctionToken = consumeAnyOf(List.of(Token.Symbol.OR), true);
+		} while (disjunctionToken != null);
 	}
 
 	private void parseConjunctionExpression(boolean isOptional) {
-		parseComparisonExpression(isOptional);
-		if (match(Token.Symbol.AND)) {
-			consume(Token.Symbol.AND);
+		Token conjunctionToken;
+		do {
 			parseComparisonExpression(isOptional);
-		}
+			conjunctionToken = consumeAnyOf(List.of(Token.Symbol.AND), true);
+		} while (conjunctionToken != null);
 	}
 
 	private void parseComparisonExpression(boolean isOptional) {
@@ -211,26 +211,26 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseAdditionExpression(boolean isOptional) {
-        parseMultiplicationExpression(isOptional);
-        Token comparisonToken = consumeAnyOf(Arrays.asList(
-                Token.Symbol.ADD,
-                Token.Symbol.SUB
-        ), true);
-        if (comparisonToken != null) {
-            parseMultiplicationExpression(isOptional);
-        }
+		Token comparisonToken;
+		do {
+        	parseMultiplicationExpression(isOptional);
+			comparisonToken = consumeAnyOf(Arrays.asList(
+					Token.Symbol.ADD,
+					Token.Symbol.SUB
+			), true);
+		} while (comparisonToken != null);
 	}
 
 	private void parseMultiplicationExpression(boolean isOptional) {
-        parsePrefixExpression(isOptional);
-        Token comparisonToken = consumeAnyOf(Arrays.asList(
-                Token.Symbol.MUL,
-                Token.Symbol.DIV,
-                Token.Symbol.MOD
-        ), true);
-        if (comparisonToken != null) {
-            parsePrefixExpression(isOptional);
-        }
+		Token comparisonToken;
+		do {
+			parsePrefixExpression(isOptional);
+			comparisonToken = consumeAnyOf(Arrays.asList(
+					Token.Symbol.MUL,
+					Token.Symbol.DIV,
+					Token.Symbol.MOD
+			), true);
+		} while (comparisonToken != null);
 	}
 
 	private void parsePrefixExpression(boolean isOptional) {

@@ -50,10 +50,10 @@ optional_assignment -> .
 expression -> disjunction .
 
 disjunction -> conjunction disjunction_1 .
-disjunction_1 -> "||" conjunction .
+disjunction_1 -> "||" conjunction disjunction_1 .
 disjunction_1 -> .
 conjunction -> comparison conjunction_1 .
-conjunction_1 -> "&&" comparison .
+conjunction_1 -> "&&" comparison conjunction_1 .
 conjunction_1 -> .
 comparison -> addition comparison_1 .
 comparison_1 -> "==" addition .
