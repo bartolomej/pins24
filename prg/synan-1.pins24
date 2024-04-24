@@ -1,4 +1,4 @@
-fun f9() =
-    while a > b do
-       a = a - 1,a = a - 1,a = a - 1
+fun f5() =
+    if 10 > 0 then
+        x = add(x, y, z)
     end

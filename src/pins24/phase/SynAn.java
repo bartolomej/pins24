@@ -39,7 +39,7 @@ public class SynAn implements AutoCloseable {
 		if (token.symbol() != symbol) {
 			throw new Report.Error(token, "Unexpected symbol " + token.symbol() + ": '" + token.lexeme() + "'.");
 		}
-		System.out.println(symbol);
+		System.out.println(token);
 		return token;
 	}
 
@@ -57,7 +57,7 @@ public class SynAn implements AutoCloseable {
             return null;
         } else {
             String allSymbols = Arrays.toString(expectedSymbols.stream().map(Enum::toString).toArray());
-            throw new Report.Error(lexAn.peekToken(), "Expected any of tokens " + allSymbols + " got " + lexAn.peekToken());
+            throw new Report.Error(lexAn.peekToken(), "Expected any of tokens " + allSymbols + " got " + lexAn.peekToken().symbol());
         }
     }
 
@@ -278,9 +278,13 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private void parseArguments() {
+		parseExpression(true);
 		do {
-			parseExpression(true);
-		} while (match(Token.Symbol.RPAREN));
+			if (match(Token.Symbol.COMMA)) {
+				consume(Token.Symbol.COMMA);
+				parseExpression(false);
+			}
+		} while (!match(Token.Symbol.RPAREN));
 	}
 
 	private void parseVarDefinition() {
