@@ -3,6 +3,7 @@ package pins24.phase;
 import pins24.common.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -12,6 +13,7 @@ public class SynAn implements AutoCloseable {
 
 	/** Leksikalni analizator. */
 	private final LexAn lexAn;
+	private HashMap<AST.Node, Report.Locatable> attrLoc;
 
 	/**
 	 * Ustvari nov sintaksni analizator.
@@ -68,11 +70,15 @@ public class SynAn implements AutoCloseable {
 	/**
 	 * Opravi sintaksno analizo.
 	 */
-	public void parse() {
+	public AST.Node parse(HashMap<AST.Node, Report.Locatable> attrLoc) {
+		this.attrLoc = attrLoc;
+		// TODO: Should be changed to `defs = parseProgram();`
+		final AST.Nodes<AST.MainDef> defs = new AST.Nodes<>();
 		parseProgram();
-		if (!match(Token.Symbol.EOF))
+		if (lexAn.peekToken().symbol() != Token.Symbol.EOF)
 			Report.warning(lexAn.peekToken(),
 					"Unexpected text '" + lexAn.peekToken().lexeme() + "...' at the end of the program.");
+		return defs;
 	}
 
 	/**
@@ -334,8 +340,9 @@ public class SynAn implements AutoCloseable {
 			if (cmdLineArgs.length > 1)
 				Report.warning("Unused arguments in the command line.");
 
+			final HashMap<AST.Node, Report.Locatable> attrLoc = new HashMap<AST.Node, Report.Locatable>();
 			try (SynAn synAn = new SynAn(cmdLineArgs[0])) {
-				synAn.parse();
+				synAn.parse(attrLoc);
 			}
 
 			// Upajmo, da kdaj pridemo to te tocke.
