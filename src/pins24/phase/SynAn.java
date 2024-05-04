@@ -2,9 +2,7 @@ package pins24.phase;
 
 import pins24.common.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Sintaksni analizator.
@@ -72,125 +70,153 @@ public class SynAn implements AutoCloseable {
 	 */
 	public AST.Node parse(HashMap<AST.Node, Report.Locatable> attrLoc) {
 		this.attrLoc = attrLoc;
-		// TODO: Should be changed to `defs = parseProgram();`
-		final AST.Nodes<AST.MainDef> defs = new AST.Nodes<>();
-		parseProgram();
+		final AST.Nodes<AST.MainDef> definitions = parseProgram();
 		if (lexAn.peekToken().symbol() != Token.Symbol.EOF)
 			Report.warning(lexAn.peekToken(),
 					"Unexpected text '" + lexAn.peekToken().lexeme() + "...' at the end of the program.");
-		return defs;
+		return definitions;
 	}
 
 	/**
 	 * Opravi sintaksno analizo celega programa.
 	 */
-	private void parseProgram() {
-		parseDefinitions();
+	private AST.Nodes<AST.MainDef> parseProgram() {
+		return new AST.Nodes<>(parseDefinitions());
 	}
 
-	private void parseDefinitions() {
+	private List<AST.MainDef> parseDefinitions() {
+		List<AST.MainDef> definitions = new ArrayList<>();
 		while (true) {
 			switch (lexAn.peekToken().symbol()) {
-				case FUN -> parseFunctionDefinition();
-				case VAR -> parseVarDefinition();
+				case FUN -> {
+					definitions.add(parseFunctionDefinition());
+				}
+				case VAR -> {
+					definitions.add(parseVarDefinition());
+				}
 				default -> {
-					return;
+					return definitions;
 				}
 			}
 		}
 	}
 
-	private void parseFunctionDefinition() {
+	private AST.FunDef parseFunctionDefinition() {
 		consume(Token.Symbol.FUN);
-		consume(Token.Symbol.IDENTIFIER);
+		Token identifier = consume(Token.Symbol.IDENTIFIER);
 		consume(Token.Symbol.LPAREN);
-		parseParameters();
+		List<AST.ParDef> parameters = parseParameters();
 		consume(Token.Symbol.RPAREN);
+		List<AST.Stmt> statements = new ArrayList<>();
 		if (match(Token.Symbol.ASSIGN)) {
 			consume(Token.Symbol.ASSIGN);
-			parseStatements();
+			statements = parseStatements();
 		}
+		return new AST.FunDef(identifier.lexeme(), parameters, statements);
 	}
 
-	private void parseParameters() {
+	private List<AST.ParDef> parseParameters() {
+		List<AST.ParDef> parameters = new ArrayList<>();
 		if (!match(Token.Symbol.IDENTIFIER)) {
-			return;
+			return parameters;
 		}
-		consume(Token.Symbol.IDENTIFIER);
+		Token firstParameter = consume(Token.Symbol.IDENTIFIER);
+		parameters.add(new AST.ParDef(firstParameter.lexeme()));
 		do {
 			if (match(Token.Symbol.COMMA)) {
 				consume(Token.Symbol.COMMA);
-				consume(Token.Symbol.IDENTIFIER);
+				Token otherParameter = consume(Token.Symbol.IDENTIFIER);
+				parameters.add(new AST.ParDef(otherParameter.lexeme()));
 			}
 		} while (match(Token.Symbol.COMMA));
+		return parameters;
 	}
 
-	private void parseStatements() {
+	private List<AST.Stmt> parseStatements() {
+		List<AST.Stmt> statements = new ArrayList<>();
 		do {
 			if (match(Token.Symbol.COMMA)) {
 				consume(Token.Symbol.COMMA);
 			}
-			parseStatement();
+			statements.add(parseStatement());
 		} while (match(Token.Symbol.COMMA));
+		return statements;
 	}
 
-	private void parseStatement() {
+	private AST.Stmt parseStatement() {
 		switch (lexAn.peekToken().symbol()) {
-			case IF -> parseIfStatement();
-			case WHILE -> parseWhileStatement();
-			case LET -> parseLetStatement();
-			default -> parseExpressionOrAssignmentStatement();
+			case IF -> {
+				return parseIfStatement();
+			}
+			case WHILE -> {
+				return parseWhileStatement();
+			}
+			case LET -> {
+				return parseLetStatement();
+			}
+			default -> {
+				return parseExpressionOrAssignmentStatement();
+			}
 		}
 	}
 
-	private void parseIfStatement() {
+	private AST.IfStmt parseIfStatement() {
 		consume(Token.Symbol.IF);
-		parseExpression(false);
+		AST.Expr condition = parseExpression(false);
 		consume(Token.Symbol.THEN);
-		parseStatements();
+		List<AST.Stmt> thenStatements = parseStatements();
 
+		List<AST.Stmt> elseStatements = new ArrayList<>();
 		if (match(Token.Symbol.ELSE)) {
 			consume(Token.Symbol.ELSE);
-			parseStatements();
+			elseStatements = parseStatements();
 		}
 
 		consume(Token.Symbol.END);
+
+		return new AST.IfStmt(condition, thenStatements, elseStatements);
 	}
 
-	private void parseWhileStatement() {
+	private AST.WhileStmt parseWhileStatement() {
 		  consume(Token.Symbol.WHILE);
-		  parseExpression(false);
+		  AST.Expr condition = parseExpression(false);
 		  consume(Token.Symbol.DO);
-		  parseStatements();
+		  List<AST.Stmt> statements = parseStatements();
 		  consume(Token.Symbol.END);
+		  return new AST.WhileStmt(condition, statements);
 	}
 
-	private void parseLetStatement() {
+	private AST.LetStmt parseLetStatement() {
 		consume(Token.Symbol.LET);
-		parseDefinitions();
+		List<AST.MainDef> definitions = parseDefinitions();
 		consume(Token.Symbol.IN);
-		parseStatements();
+		List<AST.Stmt> statements = parseStatements();
 		consume(Token.Symbol.END);
+		return new AST.LetStmt(definitions, statements);
 	}
 
-	private void parseExpressionOrAssignmentStatement() {
-		parseExpression(false);
+	private AST.Stmt parseExpressionOrAssignmentStatement() {
+		AST.Expr destinationExpression = parseExpression(false);
 		if (match(Token.Symbol.ASSIGN)) {
 			consume(Token.Symbol.ASSIGN);
-			parseExpression(false);
+			AST.Expr sourceExpression = parseExpression(false);
+			return new AST.AssignStmt(destinationExpression, sourceExpression);
+		} else {
+			return new AST.ExprStmt(destinationExpression);
 		}
 	}
 
-	private void parseExpression(boolean isOptional) {
-		parseDisjunctionExpression(isOptional);
+	private AST.Expr parseExpression(boolean isOptional) {
+		return parseDisjunctionExpression(isOptional);
 	}
 
-	private void parseDisjunctionExpression(boolean isOptional) {
+	private AST.Expr parseDisjunctionExpression(boolean isOptional) {
 		Token disjunctionToken;
 		do {
 			parseConjunctionExpression(isOptional);
 			disjunctionToken = consumeAnyOf(List.of(Token.Symbol.OR), true);
 		} while (disjunctionToken != null);
+		return null; // TODO: Implement
 	}
 
 	private void parseConjunctionExpression(boolean isOptional) {
@@ -293,37 +319,59 @@ public class SynAn implements AutoCloseable {
 		} while (!match(Token.Symbol.RPAREN));
 	}
 
-	private void parseVarDefinition() {
+	private AST.VarDef parseVarDefinition() {
 		consume(Token.Symbol.VAR);
-		consume(Token.Symbol.IDENTIFIER);
+		Token name = consume(Token.Symbol.IDENTIFIER);
 		consume(Token.Symbol.ASSIGN);
-		parseInitializers();
+		List<AST.Init> initializers = parseInitializers();
+		return new AST.VarDef(name.lexeme(), initializers);
 	}
 
-	private void parseInitializers() {
+	private List<AST.Init> parseInitializers() {
+		List<AST.Init> initializers = new ArrayList<>();
 		do {
-			parseInitializer();
+			initializers.add(parseInitializer());
 		} while (match(Token.Symbol.COMMA));
+		return initializers;
 	}
 
-	private void parseInitializer() {
+	private AST.Init parseInitializer() {
 		if (match(Token.Symbol.INTCONST)) {
-			consume(Token.Symbol.INTCONST);
+			Token num = consume(Token.Symbol.INTCONST);
 			if (match(Token.Symbol.MUL)) {
 				consume(Token.Symbol.MUL);
-				parseConst(false);
+				AST.AtomExpr value = parseConst(false);
+				return new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme()), value);
+			} else {
+				return new AST.Init(
+                        new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"),
+                        new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme())
+                );
 			}
 		} else {
-			parseConst(true);
+			AST.AtomExpr value = parseConst(false);
+			return new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"), value);
 		}
 	}
 
-	private void parseConst(boolean isOptional) {
-		consumeAnyOf(Arrays.asList(
+	private AST.AtomExpr parseConst(boolean isOptional) {
+		Token constant = consumeAnyOf(Arrays.asList(
                 Token.Symbol.INTCONST,
                 Token.Symbol.CHARCONST,
                 Token.Symbol.STRINGCONST
         ), isOptional);
+
+        // TODO: Do we need optionality?
+        if (constant == null) {
+            return null;
+        } else {
+            Map<Token.Symbol, AST.AtomExpr.Type> constSymbolToType = Map.ofEntries(
+                    new AbstractMap.SimpleEntry<>(Token.Symbol.INTCONST, AST.AtomExpr.Type.INTCONST),
+                    new AbstractMap.SimpleEntry<>(Token.Symbol.CHARCONST, AST.AtomExpr.Type.CHRCONST),
+                    new AbstractMap.SimpleEntry<>(Token.Symbol.STRINGCONST, AST.AtomExpr.Type.STRCONST)
+            );
+            return new AST.AtomExpr(constSymbolToType.get(constant.symbol()), constant.lexeme());
+        }
 	}
 
 	/**
