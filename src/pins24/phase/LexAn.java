@@ -318,12 +318,7 @@ public class LexAn implements AutoCloseable {
 					throw unexpectedTokenError();
 				}
 				int decAsciiCode = Integer.parseInt(asciiCode,16);
-				if (decAsciiCode >= 32 && decAsciiCode <= 126) {
-					lexeme.append(Character.toString(decAsciiCode));
-				} else {
-					throw this.error("Char code " + decAsciiCode + " out of ASCII range {32...126}");
-				}
-
+				lexeme.append(Character.toString(decAsciiCode));
 			}
 		} else if (matchesPattern("[\\x20-\\x7E]", buffChar)) {
 			lexeme.append((char)buffChar);
