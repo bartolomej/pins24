@@ -13,7 +13,6 @@ public class SynAn implements AutoCloseable {
 	private final LexAn lexAn;
 	private HashMap<AST.Node, Report.Locatable> attrLoc;
 	private Token current = null;
-	private Report.Locatable currentNodeStartPosition;
 
 	/**
 	 * Ustvari nov sintaksni analizator.
@@ -61,19 +60,20 @@ public class SynAn implements AutoCloseable {
 	/**
 	 * Uses the position of the next token as the start position for the current AST node.
 	 */
-	private void markStartPosition() {
-		this.currentNodeStartPosition = lexAn.peekToken().location();
+	private Report.Locatable nextPosition() {
+		return lexAn.peekToken().location();
+	}
+
+	private Report.Locatable currentPosition() {
+		return current.location();
 	}
 
 	/**
 	 * Uses the position of the previous token as the end position for the current AST node
 	 * and returns the provided AST node for convenience (so that we don't have to use temporary variables).
 	 */
-	private <T extends AST.Node> T markEndPosition(T node) {
-		if (currentNodeStartPosition == null) {
-			throw new Report.InternalError("markStartPosition hasn't been called for the current AST node");
-		}
-		this.attrLoc.put(node, rangeFromBoundaryPositions(currentNodeStartPosition, current.location()));
+	private <T extends AST.Node> T saveNodeRangeAndReturn(Report.Locatable startPosition, T node) {
+		this.attrLoc.put(node, rangeFromBoundaryPositions(startPosition, currentPosition()));
 		return node;
 	}
 
@@ -102,8 +102,8 @@ public class SynAn implements AutoCloseable {
 	 * Opravi sintaksno analizo celega programa.
 	 */
 	private AST.Nodes<AST.MainDef> parseProgram() {
-		markStartPosition();
-		return markEndPosition(new AST.Nodes<>(parseDefinitions()));
+		Report.Locatable startPosition = nextPosition();
+		return saveNodeRangeAndReturn(startPosition, new AST.Nodes<>(parseDefinitions()));
 	}
 
 	private List<AST.MainDef> parseDefinitions() {
@@ -124,7 +124,7 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private AST.FunDef parseFunctionDefinition() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		consume(Token.Symbol.FUN);
 		Token identifier = consume(Token.Symbol.IDENTIFIER);
 		consume(Token.Symbol.LPAREN);
@@ -135,24 +135,24 @@ public class SynAn implements AutoCloseable {
 			consume(Token.Symbol.ASSIGN);
 			statements = parseStatements();
 		}
-		return markEndPosition(new AST.FunDef(identifier.lexeme(), parameters, statements));
+		return saveNodeRangeAndReturn(startPosition, new AST.FunDef(identifier.lexeme(), parameters, statements));
 	}
 
 	// TODO: Can we simplify this logic using the new previous() helper?
 	private List<AST.ParDef> parseParameters() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		List<AST.ParDef> parameters = new ArrayList<>();
 		if (!check(Token.Symbol.IDENTIFIER)) {
 			return parameters;
 		}
 		Token firstParameter = consume(Token.Symbol.IDENTIFIER);
-		parameters.add(markEndPosition(new AST.ParDef(firstParameter.lexeme())));
+		parameters.add(saveNodeRangeAndReturn(startPosition, new AST.ParDef(firstParameter.lexeme())));
 		do {
 			if (check(Token.Symbol.COMMA)) {
 				consume(Token.Symbol.COMMA);
-				markStartPosition();
+				nextPosition();
 				Token otherParameter = consume(Token.Symbol.IDENTIFIER);
-				parameters.add(markEndPosition(new AST.ParDef(otherParameter.lexeme())));
+				parameters.add(saveNodeRangeAndReturn(startPosition, new AST.ParDef(otherParameter.lexeme())));
 			}
 		} while (check(Token.Symbol.COMMA));
 		return parameters;
@@ -187,7 +187,7 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private AST.IfStmt parseIfStatement() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		consume(Token.Symbol.IF);
 		AST.Expr condition = parseExpression(false);
 		consume(Token.Symbol.THEN);
@@ -201,38 +201,38 @@ public class SynAn implements AutoCloseable {
 
 		consume(Token.Symbol.END);
 
-		return markEndPosition(new AST.IfStmt(condition, thenStatements, elseStatements));
+		return saveNodeRangeAndReturn(startPosition, new AST.IfStmt(condition, thenStatements, elseStatements));
 	}
 
 	private AST.WhileStmt parseWhileStatement() {
-		markStartPosition();;
+		Report.Locatable startPosition = nextPosition();
 		consume(Token.Symbol.WHILE);
 		AST.Expr condition = parseExpression(false);
 		consume(Token.Symbol.DO);
 		List<AST.Stmt> statements = parseStatements();
 		consume(Token.Symbol.END);
-		return markEndPosition(new AST.WhileStmt(condition, statements));
+		return saveNodeRangeAndReturn(startPosition, new AST.WhileStmt(condition, statements));
 	}
 
 	private AST.LetStmt parseLetStatement() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		consume(Token.Symbol.LET);
 		List<AST.MainDef> definitions = parseDefinitions();
 		consume(Token.Symbol.IN);
 		List<AST.Stmt> statements = parseStatements();
 		consume(Token.Symbol.END);
-		return markEndPosition(new AST.LetStmt(definitions, statements));
+		return saveNodeRangeAndReturn(startPosition, new AST.LetStmt(definitions, statements));
 	}
 
 	private AST.Stmt parseExpressionOrAssignmentStatement() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		AST.Expr destinationExpression = parseExpression(false);
 		if (check(Token.Symbol.ASSIGN)) {
 			consume(Token.Symbol.ASSIGN);
 			AST.Expr sourceExpression = parseExpression(false);
-			return markEndPosition(new AST.AssignStmt(destinationExpression, sourceExpression));
+			return saveNodeRangeAndReturn(startPosition, new AST.AssignStmt(destinationExpression, sourceExpression));
 		} else {
-			return markEndPosition(new AST.ExprStmt(destinationExpression));
+			return saveNodeRangeAndReturn(startPosition, new AST.ExprStmt(destinationExpression));
 		}
 	}
 
@@ -241,29 +241,29 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private AST.Expr parseDisjunctionExpression(boolean isOptional) {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		AST.Expr expr = parseConjunctionExpression(isOptional);
 		while (match(Token.Symbol.OR)) {
 			Token operator = current;
 			AST.Expr right = parseConjunctionExpression(isOptional);
 			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
 		}
-		return markEndPosition(expr);
+		return saveNodeRangeAndReturn(startPosition, expr);
 	}
 
 	private AST.Expr parseConjunctionExpression(boolean isOptional) {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		AST.Expr expr = parseComparisonExpression(isOptional);
 		while (match(Token.Symbol.AND)) {
 			Token operator = current;
 			AST.Expr right = parseComparisonExpression(isOptional);
 			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
 		}
-		return markEndPosition(expr);
+		return saveNodeRangeAndReturn(startPosition, expr);
 	}
 
 	private AST.Expr parseComparisonExpression(boolean isOptional) {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		AST.Expr left = parseAdditionExpression(isOptional);
         if (match(
 				Token.Symbol.EQU,
@@ -275,36 +275,36 @@ public class SynAn implements AutoCloseable {
 		)) {
 			Token operator = current;
             AST.Expr right = parseAdditionExpression(isOptional);
-			return markEndPosition(new AST.BinExpr(tokenToBinExprOperator(operator), left, right));
+			return saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), left, right));
         } else {
-			return markEndPosition(left);
+			return saveNodeRangeAndReturn(startPosition, left);
 		}
 	}
 
 	private AST.Expr parseAdditionExpression(boolean isOptional) {
-		markStartPosition();
-		AST.Expr expr = parseMultiplicationExpression(isOptional);
+		Report.Locatable startPosition = nextPosition();
+		AST.Expr expr = saveNodeRangeAndReturn(startPosition, parseMultiplicationExpression(isOptional));
 		while (match(Token.Symbol.ADD, Token.Symbol.SUB)) {
 			Token operator = current;
 			AST.Expr right = parseMultiplicationExpression(isOptional);
-			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
+			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
 		}
-		return markEndPosition(expr);
+		return saveNodeRangeAndReturn(startPosition, expr);
 	}
 
 	private AST.Expr parseMultiplicationExpression(boolean isOptional) {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		AST.Expr expr = parsePrefixExpression(isOptional);
 		while (match(Token.Symbol.MUL, Token.Symbol.DIV, Token.Symbol.MOD)) {
 			Token operator = current;
 			AST.Expr right = parsePrefixExpression(isOptional);
 			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
 		}
-		return markEndPosition(expr);
+		return saveNodeRangeAndReturn(startPosition, expr);
 	}
 
 	private AST.Expr parsePrefixExpression(boolean isOptional) {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		if (match(
 				Token.Symbol.NOT,
 				Token.Symbol.ADD,
@@ -312,46 +312,46 @@ public class SynAn implements AutoCloseable {
 				Token.Symbol.PTR
 		)) {
 			Token operator = current;
-			return markEndPosition(new AST.UnExpr(tokenToPrefixUnExprOperator(operator), parsePrefixExpression(isOptional)));
+			return saveNodeRangeAndReturn(startPosition, new AST.UnExpr(tokenToPrefixUnExprOperator(operator), parsePrefixExpression(isOptional)));
 		} else {
-			return markEndPosition(parsePostfixExpression(isOptional));
+			return saveNodeRangeAndReturn(startPosition, parsePostfixExpression(isOptional));
 		}
 	}
 
 	private AST.Expr parsePostfixExpression(boolean isOptional) {
-		markStartPosition();
-        AST.Expr expr = parseConstOrGroupExpression(isOptional);
+		Report.Locatable startPosition = nextPosition();
+		AST.Expr expr = parseConstOrGroupExpression(isOptional);
 		if (match(Token.Symbol.PTR)) {
-			return markEndPosition(new AST.UnExpr(AST.UnExpr.Oper.VALUEAT, expr));
+			return saveNodeRangeAndReturn(startPosition, new AST.UnExpr(AST.UnExpr.Oper.VALUEAT, expr));
 		} else {
-			return markEndPosition(expr);
+			return saveNodeRangeAndReturn(startPosition, expr);
 		}
 	}
 
     private AST.Expr parseConstOrGroupExpression(boolean isOptional) {
-		markStartPosition();
-        if (check(Token.Symbol.LPAREN)) {
+		Report.Locatable startPosition = nextPosition();
+		if (check(Token.Symbol.LPAREN)) {
             consume(Token.Symbol.LPAREN);
             AST.Expr expr = parseExpression(false);
             consume(Token.Symbol.RPAREN);
-			return markEndPosition(expr);
+			return saveNodeRangeAndReturn(startPosition, expr);
         } else if (check(Token.Symbol.IDENTIFIER)) {
-			return markEndPosition(parseFunctionCallOrVariableAccessExpression());
+			return saveNodeRangeAndReturn(startPosition, parseFunctionCallOrVariableAccessExpression());
 		} else {
-            return markEndPosition(parseConst(isOptional));
+            return saveNodeRangeAndReturn(startPosition, parseConst(isOptional));
         }
     }
 
 	private AST.NameExpr parseFunctionCallOrVariableAccessExpression() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		Token identifier = consume(Token.Symbol.IDENTIFIER);
 		if (check(Token.Symbol.LPAREN)) {
 			consume(Token.Symbol.LPAREN);
 			List<AST.Expr> arguments = parseArguments();
 			consume(Token.Symbol.RPAREN);
-			return markEndPosition(new AST.CallExpr(identifier.lexeme(), arguments));
+			return saveNodeRangeAndReturn(startPosition, new AST.CallExpr(identifier.lexeme(), arguments));
 		} else {
-			return markEndPosition(new AST.VarExpr(identifier.lexeme()));
+			return saveNodeRangeAndReturn(startPosition, new AST.VarExpr(identifier.lexeme()));
 		}
 	}
 
@@ -371,12 +371,12 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private AST.VarDef parseVarDefinition() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		consume(Token.Symbol.VAR);
 		Token name = consume(Token.Symbol.IDENTIFIER);
 		consume(Token.Symbol.ASSIGN);
 		List<AST.Init> initializers = parseInitializers();
-		return markEndPosition(new AST.VarDef(name.lexeme(), initializers));
+		return saveNodeRangeAndReturn(startPosition, new AST.VarDef(name.lexeme(), initializers));
 	}
 
 	private List<AST.Init> parseInitializers() {
@@ -388,34 +388,34 @@ public class SynAn implements AutoCloseable {
 	}
 
 	private AST.Init parseInitializer() {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		if (check(Token.Symbol.INTCONST)) {
 			Token num = consume(Token.Symbol.INTCONST);
 			if (check(Token.Symbol.MUL)) {
 				consume(Token.Symbol.MUL);
 				AST.AtomExpr value = parseConst(false);
-				return markEndPosition(new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme()), value));
+				return saveNodeRangeAndReturn(startPosition, new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme()), value));
 			} else {
-				return markEndPosition(new AST.Init(
+				return saveNodeRangeAndReturn(startPosition, new AST.Init(
                         new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"),
                         new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme())
                 ));
 			}
 		} else {
 			AST.AtomExpr value = parseConst(false);
-			return markEndPosition(new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"), value));
+			return saveNodeRangeAndReturn(startPosition, new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"), value));
 		}
 	}
 
 	private AST.AtomExpr parseConst(boolean isOptional) {
-		markStartPosition();
+		Report.Locatable startPosition = nextPosition();
 		if (match(
 				Token.Symbol.INTCONST,
 				Token.Symbol.CHARCONST,
 				Token.Symbol.STRINGCONST
 		)) {
 			Token constant = current;
-			return markEndPosition(new AST.AtomExpr(tokenToAtomExprType(constant), constant.lexeme()));
+			return saveNodeRangeAndReturn(startPosition, new AST.AtomExpr(tokenToAtomExprType(constant), constant.lexeme()));
 		}
 
 		if (isOptional) {
