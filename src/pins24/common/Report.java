@@ -141,6 +141,11 @@ public class Report {
 			this.printStackTrace();
 		}
 
+		public InternalError(String message) {
+			super(message);
+			this.printStackTrace();
+		}
+
 	}
 
 }
