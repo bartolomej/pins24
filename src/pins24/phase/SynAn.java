@@ -246,7 +246,7 @@ public class SynAn implements AutoCloseable {
 		while (match(Token.Symbol.OR)) {
 			Token operator = current;
 			AST.Expr right = parseConjunctionExpression(isOptional);
-			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
+			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
 		}
 		return saveNodeRangeAndReturn(startPosition, expr);
 	}
@@ -257,7 +257,7 @@ public class SynAn implements AutoCloseable {
 		while (match(Token.Symbol.AND)) {
 			Token operator = current;
 			AST.Expr right = parseComparisonExpression(isOptional);
-			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
+			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
 		}
 		return saveNodeRangeAndReturn(startPosition, expr);
 	}
@@ -298,7 +298,7 @@ public class SynAn implements AutoCloseable {
 		while (match(Token.Symbol.MUL, Token.Symbol.DIV, Token.Symbol.MOD)) {
 			Token operator = current;
 			AST.Expr right = parsePrefixExpression(isOptional);
-			expr = new AST.BinExpr(tokenToBinExprOperator(operator), expr, right);
+			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
 		}
 		return saveNodeRangeAndReturn(startPosition, expr);
 	}
