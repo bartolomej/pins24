@@ -150,7 +150,7 @@ public class SynAn implements AutoCloseable {
 		do {
 			if (check(Token.Symbol.COMMA)) {
 				consume(Token.Symbol.COMMA);
-				nextPosition();
+				startPosition = nextPosition();
 				Token otherParameter = consume(Token.Symbol.IDENTIFIER);
 				parameters.add(saveNodeRangeAndReturn(startPosition, new AST.ParDef(otherParameter.lexeme())));
 			}
