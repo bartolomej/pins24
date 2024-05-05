@@ -381,13 +381,19 @@ public class SynAn implements AutoCloseable {
 
 	private List<AST.Init> parseInitializers() {
 		List<AST.Init> initializers = new ArrayList<>();
+		boolean isOptional = true;
 		do {
-			initializers.add(parseInitializer());
-		} while (check(Token.Symbol.COMMA));
+			AST.Init initializer = parseInitializer(isOptional);
+			if (initializer == null) {
+				break;
+			}
+			initializers.add(initializer);
+			isOptional = false;
+		} while (match(Token.Symbol.COMMA));
 		return initializers;
 	}
 
-	private AST.Init parseInitializer() {
+	private AST.Init parseInitializer(boolean isOptional) {
 		Report.Locatable startPosition = nextPosition();
 		if (check(Token.Symbol.INTCONST)) {
 			Token num = consume(Token.Symbol.INTCONST);
@@ -402,7 +408,10 @@ public class SynAn implements AutoCloseable {
                 ));
 			}
 		} else {
-			AST.AtomExpr value = parseConst(false);
+			AST.AtomExpr value = parseConst(isOptional);
+			if (value == null) {
+				return null;
+			}
 			return saveNodeRangeAndReturn(startPosition, new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"), value));
 		}
 	}
@@ -423,7 +432,7 @@ public class SynAn implements AutoCloseable {
 			return null;
 		} else {
 			// TODO: Reuse the standard error message
-			throw new Report.Error(lexAn.peekToken(), "Expected a constant got " + current.symbol());
+			throw new Report.Error(lexAn.peekToken(), "Expected a constant got " + lexAn.peekToken());
 		}
 	}
 

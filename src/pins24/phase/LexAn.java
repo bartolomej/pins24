@@ -173,7 +173,7 @@ public class LexAn implements AutoCloseable {
 					nextChar();
 					StringBuilder stringLexeme = new StringBuilder();
 					while (buffChar != '"') {
-						stringLexeme.append(getSingleCharLexeme());
+						stringLexeme.append(getSingleCharLexeme('"'));
 						nextChar();
 					}
 					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString(), false);
@@ -181,7 +181,7 @@ public class LexAn implements AutoCloseable {
 					break;
 				case '\'':
 					nextChar();
-					String charLexeme = getSingleCharLexeme();
+					String charLexeme = getSingleCharLexeme('\'');
 					nextChar();
 					if ((buffChar) != '\'') {
 						throw unexpectedTokenError();
@@ -294,14 +294,14 @@ public class LexAn implements AutoCloseable {
 		}
 	}
 
-	private String getSingleCharLexeme() {
+	private String getSingleCharLexeme(char caretLexeme) {
 		StringBuilder lexeme = new StringBuilder();
 		if (buffChar == '\\') {
 			nextChar();
 			if (buffChar == 'n') {
 				lexeme.append("\n");
-			} else if (buffChar == '\'') {
-				lexeme.append("'");
+			} else if (buffChar == caretLexeme) {
+				lexeme.append("" + caretLexeme);
 			} else if (buffChar == '\\') {
 				lexeme.append("\\");
 			} else {
