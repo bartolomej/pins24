@@ -1,1 +1,47 @@
-fun f2(a, b, c)
+ fun f1()
+fun f2(a)
+fun f3(a,b,c,d,e)
+fun f4()= x=5
+fun f5() =
+    if 10 > 0 then
+        x = 10
+    end
+fun f6() =
+    if 10 > 0 then
+        x = 10
+    else
+        x = 5
+    end
+fun f7() =
+    while x > 10 do
+        x = x - 1
+        end
+fun f8() =
+    let var a1 = 2 var a2 = 5 in
+        a1 > a2
+        end
+fun f9() =
+    let var a = 0 var b = 10 in
+        if !!is_valid || x > 10 then
+            while a > b do
+                a = a - 1,
+                add(x, y),
+                a = -3 * -x,
+                if x == 10++2 then
+                a = (x + y) * (x - y)
+                end,
+                if x < 0 then "negative" else "non-negative" end,
+                if x > 0 then print("Positive") else print("Non-positive") end,
+                if !z then print("Positive") else print("Non-positive") end,
+                if !z * -w then 'a' end, # komentar
+                if !a == b || c then 'a' + 'b' else
+                if x^ == 4 then 'b' end  
+                end,
+                if x * y || y /z || z%w || -z +w || x==y || x<0 || y >= z && (x&& z) && y then x = y end
+            end
+        end,
+    if a == b then
+        a = 20
+        end
+    end
+fun f10() 
