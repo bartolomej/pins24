@@ -400,11 +400,14 @@ public class SynAn implements AutoCloseable {
 			if (check(Token.Symbol.MUL)) {
 				consume(Token.Symbol.MUL);
 				AST.AtomExpr value = parseConst(false);
-				return saveNodeRangeAndReturn(startPosition, new AST.Init(new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme()), value));
+				return saveNodeRangeAndReturn(startPosition, new AST.Init(
+						saveNodeRangeAndReturn(startPosition, new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme())),
+						value
+				));
 			} else {
 				return saveNodeRangeAndReturn(startPosition, new AST.Init(
-                        new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"),
-                        new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme())
+                        saveNodeRangeAndReturn(startPosition, new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1")),
+                        saveNodeRangeAndReturn(startPosition, new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme()))
                 ));
 			}
 		} else {
