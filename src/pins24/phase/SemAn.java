@@ -426,14 +426,14 @@ public class SemAn {
 				funDef.pars.accept(this, pass);
 				funDef.stmts.accept(this, pass);
 				if (funDef.stmts.size() != 0) {
-					AST.Stmt lastStmt = funDef.stmts.getAll().getLast();
+					AST.Stmt lastStmt = funDef.stmts.getAll().get(funDef.stmts.getAll().size() - 1);
 					loop: while (true) {
 						switch (lastStmt) {
 						case AST.ExprStmt exprStmt:
 							break loop;
 						case AST.LetStmt letStmt:
 							if (letStmt.stmts.size() != 0) {
-								lastStmt = letStmt.stmts.getAll().getLast();
+								lastStmt = letStmt.stmts.getAll().get(letStmt.stmts.getAll().size() - 1);
 							} else
 								throw new Report.Error(attrAST.attrLoc.get(funDef),
 										"Function '" + funDef.name + "' does not return any value.");

@@ -1,0 +1,3 @@
+var world = "Earth"
+fun sayHello(who) =
+sayHello(world)
