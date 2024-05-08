@@ -1,3 +1,7 @@
 var world = "Earth"
 fun sayHello(who) =
-sayHello(world)
+    world = "Hello",
+    (world * world)^ = "Hello",
+    world
+fun main() =
+    sayHello(world)
