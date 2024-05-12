@@ -516,27 +516,15 @@ public class SemAn {
 		private class ResolverVisitor implements AST.FullVisitor<Object, Object> {
 
 			@Override
-			public Object visit(AST.AssignStmt assignStmt, Object arg) {
-				switch (assignStmt.dstExpr) {
-					case final AST.VarExpr varExpr:
-						break;
-					case final AST.UnExpr unExpr:
-						if (unExpr.oper != AST.UnExpr.Oper.VALUEAT) {
-							throw new Report.Error(
-									attrAST.attrLoc.get(assignStmt),
-									"Left hand side must ba a variable reference or a pointer expression"
-							);
-						}
-						break;
-					default:
-						throw new Report.Error(
-								attrAST.attrLoc.get(assignStmt),
-								"Left hand side must ba a variable reference or a pointer expression"
-						);
-				}
+			public Object visit(AST.VarExpr varExpr, Object arg) {
+				attrAST.attrLVal.put(varExpr, true);
+				return AST.FullVisitor.super.visit(varExpr, arg);
+			}
 
-				attrAST.attrLVal.put(assignStmt.dstExpr, true);
-				return null;
+			@Override
+			public Object visit(AST.UnExpr unExpr, Object arg) {
+				attrAST.attrLVal.put(unExpr, unExpr.oper == AST.UnExpr.Oper.VALUEAT);
+				return AST.FullVisitor.super.visit(unExpr, arg);
 			}
 		}
 
