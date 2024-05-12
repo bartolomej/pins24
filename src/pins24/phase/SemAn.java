@@ -526,6 +526,18 @@ public class SemAn {
 				attrAST.attrLVal.put(unExpr, unExpr.oper == AST.UnExpr.Oper.VALUEAT);
 				return AST.FullVisitor.super.visit(unExpr, arg);
 			}
+
+			@Override
+			public Object visit(AST.AssignStmt assignStmt, Object arg) {
+				AST.FullVisitor.super.visit(assignStmt, arg);
+				if (!attrAST.attrLVal.getOrDefault(assignStmt.dstExpr, false)) {
+					throw new Report.Error(
+							attrAST.attrLoc.get(assignStmt),
+							"Left hand side must ba a variable reference or a pointer expression"
+					);
+				}
+				return null;
+			}
 		}
 
 	}
