@@ -102,7 +102,7 @@ public class AST {
 		 * @return Vozlisce abstraktnega sintaksnega drevesa na podanem mestu v tem
 		 *         zaporedju vozlisc abstraktnega sintaksnega drevesa.
 		 */
-		public Node get(final int index) {
+		public ANode get(final int index) {
 			return nodes[index];
 		}
 

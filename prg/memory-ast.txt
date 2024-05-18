@@ -1,0 +1,68 @@
+This is PINS'24 compiler (memory):
+Program:
+  FunDef main [1.1:17.11] depth=1 parsSize=4 varsSize=28
+    Pars:
+    Stmts:
+      LetStmt [2.9:17.11]
+        LetDefs:
+          VarDef n [3.17:3.25] offset=-12 size=4 depth=1 inits=0
+            Inits:
+              Init 1* [3.25:3.25]
+                AtomExpr INTCONST(0) [3.25:3.25]
+          VarDef s [4.17:4.32] offset=-28 size=16 depth=1 inits=65,66,67,0
+            Inits:
+              Init 1* [4.25:4.32]
+                AtomExpr STRCONST("ABC\00") [4.25:4.32]
+          FunDef inc [5.17:13.23] depth=2 parsSize=8 varsSize=28
+            Pars:
+              ParDef m [5.25:5.25] offset=4 size=4 depth=2
+            Stmts:
+              LetStmt [6.21:13.23]
+                LetDefs:
+                  VarDef ma [7.25:7.34] offset=-12 size=4 depth=2 inits=3
+                    Inits:
+                      Init 1* [7.34:7.34]
+                        AtomExpr INTCONST(3) [7.34:7.34]
+                  VarDef ss [8.25:8.41] offset=-28 size=16 depth=2 inits=78,105,122,0
+                    Inits:
+                      Init 1* [8.34:8.41]
+                        AtomExpr STRCONST("Niz\00") [8.34:8.41]
+                  FunDef f [9.25:9.40] depth=3 parsSize=8 varsSize=8
+                    Pars:
+                      ParDef a [9.31:9.31] offset=4 size=4 depth=3
+                    Stmts:
+                      ExprStmt [9.36:9.40]
+                        BinExpr ADD [9.36:9.40]
+                          NameExpr a [9.36:9.36] def@[9.31:9.31] lval
+                          AtomExpr INTCONST(1) [9.40:9.40]
+                LetStmts:
+                  AssignStmt [11.25:11.36]
+                    NameExpr m [11.25:11.25] def@[5.25:5.25] lval
+                    AtomExpr STRCONST("Beseda") [11.29:11.36]
+                  ExprStmt [12.25:12.28]
+                    CallExpr f [12.25:12.28] def@[9.25:9.40]
+                      Args:
+                        AtomExpr INTCONST(3) [12.27:12.27]
+        LetStmts:
+          AssignStmt [15.17:15.28]
+            NameExpr n [15.17:15.17] def@[3.17:3.25] lval
+            AtomExpr STRCONST("CDE\00") [15.21:15.28]
+          ExprStmt [16.17:16.24]
+            CallExpr inc [16.17:16.24] def@[5.17:13.23]
+              Args:
+                BinExpr ADD [16.21:16.23]
+                  NameExpr n [16.21:16.21] def@[3.17:3.25] lval
+                  AtomExpr INTCONST(3) [16.23:16.23]
+  VarDef a [18.1:18.13] size=12 inits=3,4,5
+    Inits:
+      Init 1* [18.9:18.9]
+        AtomExpr INTCONST(3) [18.9:18.9]
+      Init 1* [18.11:18.11]
+        AtomExpr INTCONST(4) [18.11:18.11]
+      Init 1* [18.13:18.13]
+        AtomExpr INTCONST(5) [18.13:18.13]
+  VarDef b [19.1:19.17] size=20 inits=66,108,111,107,0
+    Inits:
+      Init 1* [19.9:19.17]
+        AtomExpr STRCONST("Blok\00") [19.9:19.17]
+:-) Done.

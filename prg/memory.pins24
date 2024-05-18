@@ -1,3 +1,19 @@
-var a = 3
-var c = 10
-fun f(b) = (a * 4 + 3)^ = (b + 3)^, 1
+fun main() =
+	let
+		var n = 0
+		var s = "ABC\00"
+		fun inc(m) =
+		    let
+		        var ma = 3
+		        var ss = "Niz\00"
+		        fun f(a) = a + 1
+		    in
+		        m = "Beseda",
+		        f(3)
+		    end
+	in
+		n = "CDE\00",
+		inc(n+3)
+	end
+var a = 3,4,5
+var b = "Blok\00"

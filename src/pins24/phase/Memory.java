@@ -168,6 +168,9 @@ public class Memory {
 	 * Organizator pomnilniske predstavitve.
 	 */
 	private static class MemoryOrganizer {
+		// Naslovi in cela stevila so 32b
+		private final int ADDRESS_BYTE_SIZE = 4;
+		private final int NUMBER_BYTE_SIZE = 4;
 
         /**
          * Abstraktno sintaksno drevo z dodanimi atributi izracuna pomnilniske
@@ -202,14 +205,88 @@ public class Memory {
          * Obiskovalec, ki izracuna pomnilnisko predstavitev.
          */
         private class MemoryVisitor implements AST.FullVisitor<Object, Object> {
+			private int currentDepth;
 
             @SuppressWarnings({"doclint:missing"})
             public MemoryVisitor() {
+				this.currentDepth = 0;
             }
 
-            /*** TODO ***/
 
-        }
+			@Override
+			public Object visit(AST.VarDef varDef, Object arg) {
+				Vector<Integer> inits = new Vector<>();
+				inits.add(0);
+				if (currentDepth == 0) {
+					attrAST.attrVarAccess.put(varDef, new Mem.AbsAccess(
+							varDef.name,
+							0, // FIXME
+							inits
+					));
+				} else {
+					new Mem.RelAccess(
+							0,
+							currentDepth,
+							0, // FIXME
+							inits,
+							varDef.name
+
+					);
+				}
+				return AST.FullVisitor.super.visit(varDef, arg);
+			}
+
+			@Override
+			public Object visit(AST.FunDef funDef, Object arg) {
+				this.currentDepth++;
+
+				int parsSize = 0;
+
+				for (int i = 0; i < funDef.pars.size(); i++) {
+					AST.ParDef parameter = funDef.pars.get(i);
+					Vector<Integer> inits = new Vector<>();
+					inits.add(0);
+					int size = NUMBER_BYTE_SIZE;
+					parsSize += size;
+					attrAST.attrParAccess.put(parameter, new Mem.RelAccess(
+							i * size,
+							currentDepth,
+							size,
+							inits,
+							parameter.name
+
+					));
+				}
+
+				int staticLinkSize = ADDRESS_BYTE_SIZE;
+				int varsSize = 0; // FIXME
+				attrAST.attrFrame.put(funDef, new Mem.Frame(
+						funDef.name,
+						currentDepth,
+						parsSize + staticLinkSize,
+						varsSize,
+						new ArrayList<>(),
+						new ArrayList<>()
+
+				));
+
+				AST.FullVisitor.super.visit(funDef, arg);
+
+				this.currentDepth--;
+
+				return null;
+			}
+
+			@Override
+			public Object visit(AST.ParDef parDef, Object arg) {
+				return AST.FullVisitor.super.visit(parDef, arg);
+			}
+
+			@Override
+			public Object visit(AST.LetStmt letStmt, Object arg) {
+				return AST.FullVisitor.super.visit(letStmt, arg);
+			}
+		}
 
         /**
          * Izracuna vrednost celostevilske konstante.
