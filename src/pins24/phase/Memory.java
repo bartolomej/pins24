@@ -171,6 +171,7 @@ public class Memory {
 		// Naslovi in cela stevila so 32b
 		private final int ADDRESS_BYTE_SIZE = 4;
 		private final int NUMBER_BYTE_SIZE = 4;
+		private final int VAR_START_BYTE_OFFSET = -12;
 
         /**
          * Abstraktno sintaksno drevo z dodanimi atributi izracuna pomnilniske
@@ -205,11 +206,20 @@ public class Memory {
          * Obiskovalec, ki izracuna pomnilnisko predstavitev.
          */
         private class MemoryVisitor implements AST.FullVisitor<Object, Object> {
-			private int currentDepth;
+			Vector<FrameParams> frameParamsStack;
+
+			private static class FrameParams {
+				public int parsSize;
+				public int varsSize;
+				FrameParams(int parsSize, int varsSize) {
+					this.parsSize = parsSize;
+					this.varsSize = varsSize;
+				}
+			}
 
             @SuppressWarnings({"doclint:missing"})
             public MemoryVisitor() {
-				this.currentDepth = 0;
+				frameParamsStack = new Vector<>();
             }
 
 
@@ -217,6 +227,7 @@ public class Memory {
 			public Object visit(AST.VarDef varDef, Object arg) {
 				Vector<Integer> inits = decodeInits(varDef);
 				int initsSize = getInitsSizeInBytes(inits);
+				int currentDepth = frameParamsStack.size();
 				if (currentDepth == 0) {
 					attrAST.attrVarAccess.put(varDef, new Mem.AbsAccess(
 							varDef.name,
@@ -224,60 +235,59 @@ public class Memory {
 							inits
 					));
 				} else {
+					FrameParams frameParams = frameParamsStack.getLast();
 					attrAST.attrVarAccess.put(varDef, new Mem.RelAccess(
-							0,
+							VAR_START_BYTE_OFFSET - frameParams.varsSize,
 							currentDepth,
 							initsSize,
 							inits,
 							varDef.name
 					));
+					frameParams.varsSize += initsSize;
 				}
+
 				return AST.FullVisitor.super.visit(varDef, arg);
 			}
 
 			@Override
 			public Object visit(AST.FunDef funDef, Object arg) {
-				this.currentDepth++;
+				FrameParams frameParams = new FrameParams(0, 0);
+				frameParamsStack.add(frameParams);
 
-				int parsSize = 0;
+				AST.FullVisitor.super.visit(funDef, arg);
 
-				for (int i = 0; i < funDef.pars.size(); i++) {
-					AST.ParDef parameter = funDef.pars.get(i);
-					Vector<Integer> inits = new Vector<>();
-					inits.add(0);
-					int size = NUMBER_BYTE_SIZE;
-					parsSize += size;
-					attrAST.attrParAccess.put(parameter, new Mem.RelAccess(
-							i * size,
-							currentDepth,
-							size,
-							inits,
-							parameter.name
-
-					));
-				}
-
-				int staticLinkSize = ADDRESS_BYTE_SIZE;
-				int varsSize = 0; // FIXME
+				int currentDepth = frameParamsStack.size();
 				attrAST.attrFrame.put(funDef, new Mem.Frame(
 						funDef.name,
 						currentDepth,
-						parsSize + staticLinkSize,
-						varsSize,
+						// Prištej velikost staticne povezave
+						frameParams.parsSize + ADDRESS_BYTE_SIZE,
+						// Prištej velikost klicnega in povratnega kazalca
+						frameParams.varsSize + 2 * ADDRESS_BYTE_SIZE,
 						new ArrayList<>(),
 						new ArrayList<>()
 
 				));
 
-				AST.FullVisitor.super.visit(funDef, arg);
-
-				this.currentDepth--;
+				frameParamsStack.removeLast();
 
 				return null;
 			}
 
 			@Override
 			public Object visit(AST.ParDef parDef, Object arg) {
+				FrameParams frameParams = frameParamsStack.getLast();
+				Vector<Integer> inits = getDefaultInits();
+				int size = getInitsSizeInBytes(inits);
+				attrAST.attrParAccess.put(parDef, new Mem.RelAccess(
+						frameParams.parsSize,
+						frameParamsStack.size(),
+						size,
+						inits,
+						parDef.name
+
+				));
+				frameParams.parsSize += size;
 				return AST.FullVisitor.super.visit(parDef, arg);
 			}
 
@@ -285,6 +295,15 @@ public class Memory {
 			public Object visit(AST.LetStmt letStmt, Object arg) {
 				return AST.FullVisitor.super.visit(letStmt, arg);
 			}
+		}
+
+		private Vector<Integer> getDefaultInits() {
+			Vector<Integer> inits = new Vector<>();
+			inits.add(1); // Number of inits
+			inits.add(1); // Number of repetitions
+			inits.add(1); // Length of the value group
+			inits.add(0); // The init value
+			return inits;
 		}
 
 		/**
@@ -296,10 +315,10 @@ public class Memory {
 			int totalSizeInBytes = 0;
 			int i = 1;
 			while (i < inits.size()) {
-				int repetitionsOfNextElement = inits.get(i);
-				int sizeOfElementGroup = inits.get(i + 1);
-				totalSizeInBytes += repetitionsOfNextElement * sizeOfElementGroup * NUMBER_BYTE_SIZE;
-				i += 2 + sizeOfElementGroup;
+				int repetitionsOfNextValue = inits.get(i);
+				int sizeOfValueGroup = inits.get(i + 1);
+				totalSizeInBytes += repetitionsOfNextValue * sizeOfValueGroup * NUMBER_BYTE_SIZE;
+				i += 2 + sizeOfValueGroup;
 			}
 			return totalSizeInBytes;
 		}
@@ -313,12 +332,12 @@ public class Memory {
 			for (AST.Init init : varDef.inits) {
 				int num = decodeConst(init.num).getFirst();
 
-				// Indicate the number of repetitions of the next group of elements (many in case of string)
+				// Indicate the number of repetitions of the next group of values (many in case of string)
 				inits.add(num);
 
-				Vector<Integer> elementsGroup = decodeConst(init.value);
-				inits.add(elementsGroup.size());
-				inits.addAll(elementsGroup);
+				Vector<Integer> valueGroup = decodeConst(init.value);
+				inits.add(valueGroup.size());
+				inits.addAll(valueGroup);
 			}
 
 			return inits;
