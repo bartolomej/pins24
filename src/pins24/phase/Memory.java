@@ -215,23 +215,22 @@ public class Memory {
 
 			@Override
 			public Object visit(AST.VarDef varDef, Object arg) {
-				Vector<Integer> inits = new Vector<>();
-				inits.add(0);
+				Vector<Integer> inits = decodeInits(varDef);
+				int initsSize = getInitsSizeInBytes(inits);
 				if (currentDepth == 0) {
 					attrAST.attrVarAccess.put(varDef, new Mem.AbsAccess(
 							varDef.name,
-							0, // FIXME
+							initsSize,
 							inits
 					));
 				} else {
-					new Mem.RelAccess(
+					attrAST.attrVarAccess.put(varDef, new Mem.RelAccess(
 							0,
 							currentDepth,
-							0, // FIXME
+							initsSize,
 							inits,
 							varDef.name
-
-					);
+					));
 				}
 				return AST.FullVisitor.super.visit(varDef, arg);
 			}
@@ -288,86 +287,62 @@ public class Memory {
 			}
 		}
 
-        /**
-         * Izracuna vrednost celostevilske konstante.
-         *
-         * @param intAtomExpr Celostevilska konstanta.
-         * @param loc         Lokacija celostevilske konstante.
-         * @return Vrednost celostevilske konstante.
-         */
-        public static Integer decodeIntConst(final AST.AtomExpr intAtomExpr, final Report.Locatable loc) {
-            try {
-                return Integer.decode(intAtomExpr.value);
-            } catch (NumberFormatException __) {
-                throw new Report.Error(loc, "Illegal integer value.");
-            }
-        }
+		/**
+		 * Calculates the total size of initializers in bytes.
+		 * @param inits The initializers array conforming to the rules in `decodeInits`.
+		 * @return Number of bytes
+		 */
+		private int getInitsSizeInBytes(Vector<Integer> inits) {
+			int totalSizeInBytes = 0;
+			int i = 1;
+			while (i < inits.size()) {
+				int repetitionsOfNextElement = inits.get(i);
+				int sizeOfElementGroup = inits.get(i + 1);
+				totalSizeInBytes += repetitionsOfNextElement * sizeOfElementGroup * NUMBER_BYTE_SIZE;
+				i += 2 + sizeOfElementGroup;
+			}
+			return totalSizeInBytes;
+		}
 
-        /**
-         * Izracuna vrednost znakovna konstante.
-         *
-         * @param chrAtomExpr Znakovna konstanta.
-         * @param loc         Lokacija znakovne konstante.
-         * @return Vrednost znakovne konstante.
-         */
-        public static Integer decodeChrConst(final AST.AtomExpr chrAtomExpr, final Report.Locatable loc) {
-            switch (chrAtomExpr.value.charAt(1)) {
-                case '\\':
-                    switch (chrAtomExpr.value.charAt(2)) {
-                        case 'n':
-                            return 10;
-                        case '\'':
-                            return ((int) '\'');
-                        case '\\':
-                            return ((int) '\\');
-                        default:
-                            return 16 * (((int) chrAtomExpr.value.charAt(2)) - ((int) '0'))
-                                    + (((int) chrAtomExpr.value.charAt(3)) - ((int) '0'));
-                    }
-                default:
-                    return ((int) chrAtomExpr.value.charAt(1));
-            }
-        }
+		private Vector<Integer> decodeInits(AST.VarDef varDef) {
+			final Vector<Integer> inits = new Vector<Integer>();
 
-        /**
-         * Izracuna vrednost konstantnega niza.
-         *
-         * @param strAtomExpr Konstantni niz.
-         * @param loc         Lokacija konstantnega niza.
-         * @return Vrendnost konstantega niza.
-         */
-        public static Vector<Integer> decodeStrConst(final AST.AtomExpr strAtomExpr, final Report.Locatable loc) {
-            final Vector<Integer> value = new Vector<Integer>();
-            for (int c = 1; c < strAtomExpr.value.length() - 1; c++) {
-                switch (strAtomExpr.value.charAt(c)) {
-                    case '\\':
-                        switch (strAtomExpr.value.charAt(c + 1)) {
-                            case 'n':
-                                value.addLast(10);
-                                c += 1;
-                                break;
-                            case '\"':
-                                value.addLast((int) '\"');
-                                c += 1;
-                                break;
-                            case '\\':
-                                value.addLast((int) '\\');
-                                c += 1;
-                                break;
-                            default:
-                                value.addLast(16 * (((int) strAtomExpr.value.charAt(c + 1)) - ((int) '0'))
-                                        + (((int) strAtomExpr.value.charAt(c + 2)) - ((int) '0')));
-                                c += 2;
-                                break;
-                        }
-                        break;
-                    default:
-                        value.addLast((int) strAtomExpr.value.charAt(c));
-                        break;
-                }
-            }
-            return value;
-        }
+			// The very first element must indicate the number of total initializers.
+			inits.add(varDef.inits.size());
+
+			for (AST.Init init : varDef.inits) {
+				int num = decodeConst(init.num).getFirst();
+
+				// Indicate the number of repetitions of the next group of elements (many in case of string)
+				inits.add(num);
+
+				Vector<Integer> elementsGroup = decodeConst(init.value);
+				inits.add(elementsGroup.size());
+				inits.addAll(elementsGroup);
+			}
+
+			return inits;
+		}
+
+		private Vector<Integer> decodeConst(final AST.AtomExpr atomExpr) {
+			final Vector<Integer> value = new Vector<Integer>();
+			switch (atomExpr.type) {
+				case CHRCONST -> value.add((int) atomExpr.value.charAt(0));
+				case STRCONST -> {
+					for (int c = 0; c < atomExpr.value.length(); c++) {
+						value.addLast((int) atomExpr.value.charAt(c));
+					}
+				}
+				case INTCONST -> {
+					try {
+						value.add(Integer.decode(atomExpr.value));
+					} catch (NumberFormatException __) {
+						throw new Report.Error(attrAST.attrLoc.get(atomExpr), "Illegal integer value.");
+					}
+				}
+			}
+			return value;
+		}
 
         // --- ZAGON ---
 
