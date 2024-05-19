@@ -206,20 +206,25 @@ public class Memory {
          * Obiskovalec, ki izracuna pomnilnisko predstavitev.
          */
         private class MemoryVisitor implements AST.FullVisitor<Object, Object> {
-			Vector<FrameParams> frameParamsStack;
+			Vector<FrameComputedFields> frameComputedFieldsStack;
 
-			private static class FrameParams {
+			private static class FrameComputedFields {
 				public int parsSize;
 				public int varsSize;
-				FrameParams(int parsSize, int varsSize) {
-					this.parsSize = parsSize;
-					this.varsSize = varsSize;
+				public List<Mem.RelAccess> debugPars;
+				public List<Mem.RelAccess> debugVars;
+				FrameComputedFields() {
+					// Set default values
+					this.parsSize = 0;
+					this.varsSize = 0;
+					this.debugPars = new ArrayList<>();
+					this.debugVars = new ArrayList<>();
 				}
 			}
 
             @SuppressWarnings({"doclint:missing"})
             public MemoryVisitor() {
-				frameParamsStack = new Vector<>();
+				frameComputedFieldsStack = new Vector<>();
             }
 
 
@@ -227,7 +232,7 @@ public class Memory {
 			public Object visit(AST.VarDef varDef, Object arg) {
 				Vector<Integer> inits = decodeInits(varDef);
 				int initsSize = getInitsSizeInBytes(inits);
-				int currentDepth = frameParamsStack.size();
+				int currentDepth = frameComputedFieldsStack.size();
 				if (currentDepth == 0) {
 					attrAST.attrVarAccess.put(varDef, new Mem.AbsAccess(
 							varDef.name,
@@ -235,15 +240,17 @@ public class Memory {
 							inits
 					));
 				} else {
-					FrameParams frameParams = frameParamsStack.getLast();
-					attrAST.attrVarAccess.put(varDef, new Mem.RelAccess(
-							VAR_START_BYTE_OFFSET - frameParams.varsSize,
+					FrameComputedFields frameComputedFields = frameComputedFieldsStack.getLast();
+					Mem.RelAccess relAccess = new Mem.RelAccess(
+							VAR_START_BYTE_OFFSET - frameComputedFields.varsSize,
 							currentDepth,
 							initsSize,
 							inits,
 							varDef.name
-					));
-					frameParams.varsSize += initsSize;
+					);
+					attrAST.attrVarAccess.put(varDef, relAccess);
+					frameComputedFields.varsSize += initsSize;
+					frameComputedFields.debugVars.add(relAccess);
 				}
 
 				return AST.FullVisitor.super.visit(varDef, arg);
@@ -251,44 +258,48 @@ public class Memory {
 
 			@Override
 			public Object visit(AST.FunDef funDef, Object arg) {
-				FrameParams frameParams = new FrameParams(0, 0);
-				frameParamsStack.add(frameParams);
+				FrameComputedFields frameComputedFields = new FrameComputedFields();
+				frameComputedFieldsStack.add(frameComputedFields);
 
 				AST.FullVisitor.super.visit(funDef, arg);
 
-				int currentDepth = frameParamsStack.size();
+				int currentDepth = frameComputedFieldsStack.size();
 				attrAST.attrFrame.put(funDef, new Mem.Frame(
 						funDef.name,
 						currentDepth,
 						// Add the size of static link pointer
-						frameParams.parsSize + ADDRESS_BYTE_SIZE,
+						frameComputedFields.parsSize + ADDRESS_BYTE_SIZE,
 						// Add the size of frame and return pointer
-						frameParams.varsSize + 2 * ADDRESS_BYTE_SIZE,
-						new ArrayList<>(),
-						new ArrayList<>()
+						frameComputedFields.varsSize + 2 * ADDRESS_BYTE_SIZE,
+						frameComputedFields.debugPars,
+						frameComputedFields.debugVars
 
 				));
 
-				frameParamsStack.removeLast();
+				frameComputedFieldsStack.removeLast();
 
 				return null;
 			}
 
 			@Override
 			public Object visit(AST.ParDef parDef, Object arg) {
-				FrameParams frameParams = frameParamsStack.getLast();
+				FrameComputedFields frameComputedFields = frameComputedFieldsStack.getLast();
 				// Parameters have no initializers, but must reserve memory space
 				int size = NUMBER_BYTE_SIZE;
-				attrAST.attrParAccess.put(parDef, new Mem.RelAccess(
+				Mem.RelAccess relAccess = new Mem.RelAccess(
 						// Add size of the frame pointer
-						frameParams.parsSize + ADDRESS_BYTE_SIZE,
-						frameParamsStack.size(),
+						frameComputedFields.parsSize + ADDRESS_BYTE_SIZE,
+						frameComputedFieldsStack.size(),
 						size,
 						null,
 						parDef.name
 
-				));
-				frameParams.parsSize += size;
+				);
+				attrAST.attrParAccess.put(parDef, relAccess);
+
+				frameComputedFields.parsSize += size;
+				frameComputedFields.debugPars.add(relAccess);
+
 				return AST.FullVisitor.super.visit(parDef, arg);
 			}
 
