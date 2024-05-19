@@ -260,9 +260,9 @@ public class Memory {
 				attrAST.attrFrame.put(funDef, new Mem.Frame(
 						funDef.name,
 						currentDepth,
-						// Prištej velikost staticne povezave
+						// Add the size of static link pointer
 						frameParams.parsSize + ADDRESS_BYTE_SIZE,
-						// Prištej velikost klicnega in povratnega kazalca
+						// Add the size of frame and return pointer
 						frameParams.varsSize + 2 * ADDRESS_BYTE_SIZE,
 						new ArrayList<>(),
 						new ArrayList<>()
@@ -277,13 +277,14 @@ public class Memory {
 			@Override
 			public Object visit(AST.ParDef parDef, Object arg) {
 				FrameParams frameParams = frameParamsStack.getLast();
-				Vector<Integer> inits = getDefaultInits();
-				int size = getInitsSizeInBytes(inits);
+				// Parameters have no initializers, but must reserve memory space
+				int size = NUMBER_BYTE_SIZE;
 				attrAST.attrParAccess.put(parDef, new Mem.RelAccess(
-						frameParams.parsSize,
+						// Add size of the frame pointer
+						frameParams.parsSize + ADDRESS_BYTE_SIZE,
 						frameParamsStack.size(),
 						size,
-						inits,
+						null,
 						parDef.name
 
 				));
@@ -295,15 +296,6 @@ public class Memory {
 			public Object visit(AST.LetStmt letStmt, Object arg) {
 				return AST.FullVisitor.super.visit(letStmt, arg);
 			}
-		}
-
-		private Vector<Integer> getDefaultInits() {
-			Vector<Integer> inits = new Vector<>();
-			inits.add(1); // Number of inits
-			inits.add(1); // Number of repetitions
-			inits.add(1); // Length of the value group
-			inits.add(0); // The init value
-			return inits;
 		}
 
 		/**
