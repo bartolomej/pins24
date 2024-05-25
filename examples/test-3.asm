@@ -1,7 +1,7 @@
 This is PINS'24 compiler (code generation):
-[1mProgram:[0m
-[31m[30m  [1mFunDef main[0m [1.1:7.7] depth=1 parsSize=4 varsSize=20
-[31m      --- Code: ---
+Program:
+  FunDef main [1.1:7.7] depth=1 parsSize=4 varsSize=20
+      --- Code: ---
       LABEL main
         PUSH -12
         POPN
@@ -22,10 +22,10 @@ This is PINS'24 compiler (code generation):
         CALL
         PUSH 0
         RETN
-[30m    [1mPars:[0m
-[31m[30m    [1mStmts:[0m
-[31m[30m      [1mLetStmt[0m [2.5:7.7]
-[31m          --- Code: ---
+    Pars:
+    Stmts:
+      LetStmt [2.5:7.7]
+          --- Code: ---
             REGN.FP
             PUSH -16
             OPER.ADD
@@ -43,9 +43,9 @@ This is PINS'24 compiler (code generation):
             CALL
             PUSH 4
             POPN
-[30m        [1mLetDefs:[0m
-[31m[30m          [1mVarDef x[0m [3.9:3.17] offset=-16 size=8 depth=1 inits=3,4
-[31m              --- Code: ---
+        LetDefs:
+          VarDef x [3.9:3.17] offset=-16 size=8 depth=1 inits=3,4
+              --- Code: ---
                 REGN.FP
                 PUSH -16
                 OPER.ADD
@@ -60,13 +60,13 @@ This is PINS'24 compiler (code generation):
                 DATA 1
                 DATA 1
                 DATA 4
-[30m            [1mInits:[0m
-[31m[30m              [1mInit 1*[0m [3.15:3.15]
-[31m[30m                [1mAtomExpr INTCONST(3)[0m [3.15:3.15]
-[31m[30m              [1mInit 1*[0m [3.17:3.17]
-[31m[30m                [1mAtomExpr INTCONST(4)[0m [3.17:3.17]
-[31m[30m          [1mVarDef i[0m [4.9:4.15] offset=-20 size=4 depth=1 inits=0
-[31m              --- Code: ---
+            Inits:
+              Init 1* [3.15:3.15]
+                AtomExpr INTCONST(3) [3.15:3.15]
+              Init 1* [3.17:3.17]
+                AtomExpr INTCONST(4) [3.17:3.17]
+          VarDef i [4.9:4.15] offset=-20 size=4 depth=1 inits=0
+              --- Code: ---
                 REGN.FP
                 PUSH -20
                 OPER.ADD
@@ -78,12 +78,12 @@ This is PINS'24 compiler (code generation):
                 DATA 1
                 DATA 1
                 DATA 0
-[30m            [1mInits:[0m
-[31m[30m              [1mInit 1*[0m [4.15:4.15]
-[31m[30m                [1mAtomExpr INTCONST(0)[0m [4.15:4.15]
-[31m[30m        [1mLetStmts:[0m
-[31m[30m          [1mExprStmt[0m [6.9:6.15]
-[31m              --- Code: ---
+            Inits:
+              Init 1* [4.15:4.15]
+                AtomExpr INTCONST(0) [4.15:4.15]
+        LetStmts:
+          ExprStmt [6.9:6.15]
+              --- Code: ---
                 PUSH 10
                 REGN.FP
                 LOAD
@@ -91,19 +91,19 @@ This is PINS'24 compiler (code generation):
                 CALL
                 PUSH 4
                 POPN
-[30m            [1mCallExpr inc[0m [6.9:6.15] def@[9.1:9.14]
-[31m                --- Code: ---
+            CallExpr inc [6.9:6.15] def@[9.1:9.14]
+                --- Code: ---
                   PUSH 10
                   REGN.FP
                   LOAD
                   NAME inc
                   CALL
-[30m              [1mArgs:[0m
-[31m[30m                [1mAtomExpr INTCONST(10)[0m [6.13:6.14]
-[31m                    --- Code: ---
+              Args:
+                AtomExpr INTCONST(10) [6.13:6.14]
+                    --- Code: ---
                       PUSH 10
-[30m  [1mFunDef inc[0m [9.1:9.14] depth=1 parsSize=8 varsSize=8
-[31m      --- Code: ---
+  FunDef inc [9.1:9.14] depth=1 parsSize=8 varsSize=8
+      --- Code: ---
       LABEL inc
         PUSH 0
         POPN
@@ -115,11 +115,11 @@ This is PINS'24 compiler (code generation):
         OPER.ADD
         PUSH 4
         RETN
-[30m    [1mPars:[0m
-[31m[30m      [1mParDef n[0m [9.9:9.9] offset=4 size=4 depth=1
-[31m[30m    [1mStmts:[0m
-[31m[30m      [1mExprStmt[0m [9.12:9.14]
-[31m          --- Code: ---
+    Pars:
+      ParDef n [9.9:9.9] offset=4 size=4 depth=1
+    Stmts:
+      ExprStmt [9.12:9.14]
+          --- Code: ---
             REGN.FP
             PUSH 4
             OPER.ADD
@@ -128,25 +128,25 @@ This is PINS'24 compiler (code generation):
             OPER.ADD
             PUSH 4
             POPN
-[30m        [1mBinExpr ADD[0m [9.12:9.14]
-[31m            --- Code: ---
+        BinExpr ADD [9.12:9.14]
+            --- Code: ---
               REGN.FP
               PUSH 4
               OPER.ADD
               LOAD
               PUSH 1
               OPER.ADD
-[30m          [1mNameExpr n[0m [9.12:9.12] def@[9.9:9.9] lval
-[31m              --- Code: ---
+          NameExpr n [9.12:9.12] def@[9.9:9.9] lval
+              --- Code: ---
                 REGN.FP
                 PUSH 4
                 OPER.ADD
                 LOAD
-[30m          [1mAtomExpr INTCONST(1)[0m [9.14:9.14]
-[31m              --- Code: ---
+          AtomExpr INTCONST(1) [9.14:9.14]
+              --- Code: ---
                 PUSH 1
-[30m  [1mVarDef y[0m [11.1:11.9] size=8 inits=5,5
-[31m      --- Code: ---
+  VarDef y [11.1:11.9] size=8 inits=5,5
+      --- Code: ---
         NAME y
         NAME :2
         INIT
@@ -158,19 +158,19 @@ This is PINS'24 compiler (code generation):
         DATA 2
         DATA 1
         DATA 5
-[30m    [1mInits:[0m
-[31m[30m      [1mInit 2*[0m [11.7:11.9]
-[31m[30m        [1mAtomExpr INTCONST(5)[0m [11.9:11.9]
-[31m[30m  [1mFunDef putstr[0m [13.1:13.19] depth=1 parsSize=8 varsSize=8
-[31m[30m    [1mPars:[0m
-[31m[30m      [1mParDef straddr[0m [13.12:13.18] offset=4 size=4 depth=1
-[31m[30m    [1mStmts:[0m
-[31m[30m  [1mFunDef putint[0m [14.1:14.20] depth=1 parsSize=8 varsSize=8
-[31m[30m    [1mPars:[0m
-[31m[30m      [1mParDef intvalue[0m [14.12:14.19] offset=4 size=4 depth=1
-[31m[30m    [1mStmts:[0m
-[31m[30m
-[1mCODE SEGMENT:[0m
+    Inits:
+      Init 2* [11.7:11.9]
+        AtomExpr INTCONST(5) [11.9:11.9]
+  FunDef putstr [13.1:13.19] depth=1 parsSize=8 varsSize=8
+    Pars:
+      ParDef straddr [13.12:13.18] offset=4 size=4 depth=1
+    Stmts:
+  FunDef putint [14.1:14.20] depth=1 parsSize=8 varsSize=8
+    Pars:
+      ParDef intvalue [14.12:14.19] offset=4 size=4 depth=1
+    Stmts:
+
+CODE SEGMENT:
        0 [5]   NAME y
        5 [5]   NAME :2
       10 [1]   INIT
@@ -212,7 +212,7 @@ This is PINS'24 compiler (code generation):
      104 [5]   PUSH 4
      109 [1]   RETN
 
-[1mDATA SEGMENT:[0m
+DATA SEGMENT:
      110 [0] LABEL :0
      110 [4]   DATA 2
      114 [4]   DATA 1
