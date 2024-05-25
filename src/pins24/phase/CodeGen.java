@@ -215,12 +215,12 @@ public class CodeGen {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(callExpr);
 
+				List<PDM.CodeInstr> childInstr = callExpr.args.accept(this, frame);
+				instrs.addAll(childInstr);
+
 				// Push static link
 				instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
 				instrs.add(new PDM.LOAD(loc));
-
-				List<PDM.CodeInstr> childInstr = callExpr.args.accept(this, frame);
-				instrs.addAll(childInstr);
 
 				instrs.add(new PDM.NAME(callExpr.name, loc));
 				instrs.add(new PDM.CALL(frame, loc));

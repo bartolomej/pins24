@@ -1,3 +1,9 @@
-fun main()=putint(1)
+fun main()=getstr(new(10))
 
-fun putint(intvalue)
+fun exit(exitcode)
+fun getint()
+fun putint(value)
+fun getstr(straddr)
+fun putstr(straddr)
+fun new(size)
+fun del(straddr)
