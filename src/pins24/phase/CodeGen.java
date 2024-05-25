@@ -165,8 +165,81 @@ public class CodeGen {
 			public Generator() {
 			}
 
-		    /*** TODO ***/
+			@Override
+			public List<PDM.CodeInstr> visit(AST.FunDef funDef, Mem.Frame parentFrame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Mem.Frame frame = attrAST.attrFrame.get(funDef);
+				Report.Locatable loc = attrAST.attrLoc.get(funDef);
 
+				if (parentFrame == null) {
+					// TODO: This is a global function, do we need to do anything extra?
+				}
+
+				instrs.add(new PDM.LABEL(funDef.name, loc));
+
+				// Initialize the memory space for all the local variables.
+				// Note that `varsSize` includes the size of FP and RA.
+				instrs.add(new PDM.PUSH(frame.varsSize - 8, loc));
+				instrs.add(new PDM.POPN(loc));
+
+
+				// TODO: Do we need to do the same for params?
+				List<PDM.CodeInstr> childInstr = funDef.stmts.accept(this, frame);
+				instrs.addAll(childInstr);
+
+				// Note tat `parsSize` includes the size of SL
+				instrs.add(new PDM.PUSH(frame.parsSize - 4, loc));
+				instrs.add(new PDM.RETN(frame, loc));
+
+				attrAST.attrCode.put(funDef, instrs);
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.Nodes<? extends AST.Node> nodes, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				for (final AST.Node node : nodes) {
+					instrs.addAll(node.accept(this, frame));
+				}
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.ExprStmt exprStmt, Mem.Frame frame) {
+				return exprStmt.expr.accept(this, frame);
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.CallExpr callExpr, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(callExpr);
+
+				// Push static link
+				instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
+				instrs.add(new PDM.LOAD(loc));
+
+				List<PDM.CodeInstr> childInstr = callExpr.args.accept(this, frame);
+				instrs.addAll(childInstr);
+
+				instrs.add(new PDM.NAME(callExpr.name, loc));
+				instrs.add(new PDM.CALL(frame, loc));
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.AtomExpr atomExpr, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(atomExpr);
+
+				Vector<Integer> values = Memory.decodeConst(atomExpr, attrAST);
+				for (Integer value : values) {
+					instrs.add(new PDM.PUSH(value, loc));
+				}
+
+				return instrs;
+			}
 		}
 
 	}

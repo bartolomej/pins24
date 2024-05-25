@@ -164,6 +164,26 @@ public class Memory {
 		return attrAST;
 	}
 
+	public static Vector<Integer> decodeConst(final AST.AtomExpr atomExpr, AttrAST attrAST) {
+		final Vector<Integer> value = new Vector<Integer>();
+		switch (atomExpr.type) {
+			case CHRCONST -> value.add((int) atomExpr.value.charAt(0));
+			case STRCONST -> {
+				for (int c = 0; c < atomExpr.value.length(); c++) {
+					value.addLast((int) atomExpr.value.charAt(c));
+				}
+			}
+			case INTCONST -> {
+				try {
+					value.add(Integer.decode(atomExpr.value));
+				} catch (NumberFormatException __) {
+					throw new Report.Error(attrAST.attrLoc.get(atomExpr), "Illegal integer value.");
+				}
+			}
+		}
+		return value;
+	}
+
 	/**
 	 * Organizator pomnilniske predstavitve.
 	 */
@@ -334,37 +354,17 @@ public class Memory {
 			inits.add(varDef.inits.size());
 
 			for (AST.Init init : varDef.inits) {
-				int num = decodeConst(init.num).getFirst();
+				int num = decodeConst(init.num, attrAST).getFirst();
 
 				// Indicate the number of repetitions of the next group of values (many in case of string)
 				inits.add(num);
 
-				Vector<Integer> valueGroup = decodeConst(init.value);
+				Vector<Integer> valueGroup = decodeConst(init.value, attrAST);
 				inits.add(valueGroup.size());
 				inits.addAll(valueGroup);
 			}
 
 			return inits;
-		}
-
-		private Vector<Integer> decodeConst(final AST.AtomExpr atomExpr) {
-			final Vector<Integer> value = new Vector<Integer>();
-			switch (atomExpr.type) {
-				case CHRCONST -> value.add((int) atomExpr.value.charAt(0));
-				case STRCONST -> {
-					for (int c = 0; c < atomExpr.value.length(); c++) {
-						value.addLast((int) atomExpr.value.charAt(c));
-					}
-				}
-				case INTCONST -> {
-					try {
-						value.add(Integer.decode(atomExpr.value));
-					} catch (NumberFormatException __) {
-						throw new Report.Error(attrAST.attrLoc.get(atomExpr), "Illegal integer value.");
-					}
-				}
-			}
-			return value;
 		}
 
         // --- ZAGON ---
