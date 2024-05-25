@@ -171,7 +171,8 @@ public class Memory {
 		// Naslovi in cela stevila so 32b
 		private final int ADDRESS_BYTE_SIZE = 4;
 		private final int NUMBER_BYTE_SIZE = 4;
-		private final int VAR_START_BYTE_OFFSET = -12;
+		// Offset from the FP, previous FP and RA
+		private final int VAR_START_BYTE_OFFSET = -8;
 
         /**
          * Abstraktno sintaksno drevo z dodanimi atributi izracuna pomnilniske
@@ -231,25 +232,25 @@ public class Memory {
 			@Override
 			public Object visit(AST.VarDef varDef, Object arg) {
 				Vector<Integer> inits = decodeInits(varDef);
-				int initsSize = getInitsSizeInBytes(inits);
+				int varSize = getVariableSizeInBytes(inits);
 				int currentDepth = frameComputedFieldsStack.size();
 				if (currentDepth == 0) {
 					attrAST.attrVarAccess.put(varDef, new Mem.AbsAccess(
 							varDef.name,
-							initsSize,
+							varSize,
 							inits
 					));
 				} else {
 					FrameComputedFields frameComputedFields = frameComputedFieldsStack.getLast();
 					Mem.RelAccess relAccess = new Mem.RelAccess(
-							VAR_START_BYTE_OFFSET - frameComputedFields.varsSize,
+							VAR_START_BYTE_OFFSET - frameComputedFields.varsSize - varSize,
 							currentDepth,
-							initsSize,
+							varSize,
 							inits,
 							varDef.name
 					);
 					attrAST.attrVarAccess.put(varDef, relAccess);
-					frameComputedFields.varsSize += initsSize;
+					frameComputedFields.varsSize += varSize;
 					frameComputedFields.debugVars.add(relAccess);
 				}
 
@@ -314,7 +315,7 @@ public class Memory {
 		 * @param inits The initializers array conforming to the rules in `decodeInits`.
 		 * @return Number of bytes
 		 */
-		private int getInitsSizeInBytes(Vector<Integer> inits) {
+		private int getVariableSizeInBytes(Vector<Integer> inits) {
 			int totalSizeInBytes = 0;
 			int i = 1;
 			while (i < inits.size()) {
