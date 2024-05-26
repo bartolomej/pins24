@@ -1,11 +1,13 @@
 fun main()=
     let
-        var msgThen="Condition is true\n\00"
+        var str = "\01"
+        var newlinestr = "\n\00"
+        var strptr = 0
     in
-        while (getint())
-        do
-            putstr(^msgThen)
-        end,
+        strptr = ^str,
+        putint(-(strptr^)),
+        putint(!(strptr^)),
+        putstr(^newlinestr),
 
         0
     end

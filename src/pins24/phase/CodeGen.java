@@ -401,17 +401,29 @@ public class CodeGen {
 				Report.Locatable loc = attrAST.attrLoc.get(unExpr);
 
 
-				switch (unExpr.oper) {
-					case MEMADDR -> {
-						List<PDM.CodeInstr> nestedInstrs = unExpr.expr.accept(this, frame);
-						temporarilyRemoveLastLoad(nestedInstrs);
-						instrs.addAll(nestedInstrs);
-					}
-					case VALUEAT -> {}
-					case ADD -> {}
-					case NOT -> {}
-					case SUB -> {}
+				List<PDM.CodeInstr> nestedInstrs = unExpr.expr.accept(this, frame);
+
+				if (unExpr.oper == AST.UnExpr.Oper.MEMADDR) {
+					temporarilyRemoveLastLoad(nestedInstrs);
 				}
+
+				instrs.addAll(nestedInstrs);
+
+				switch (unExpr.oper) {
+					case VALUEAT -> {
+						// TODO: Check if the last instruction is already LOAD?
+						instrs.add(new PDM.LOAD(loc));
+					}
+					case NOT -> {
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.NOT, loc));
+					}
+					case SUB -> {
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.NEG, loc));
+					}
+					case MEMADDR, ADD -> {
+						// NOOP
+					}
+                }
 
 				attrAST.attrCode.put(unExpr, instrs);
 
