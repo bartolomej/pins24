@@ -354,35 +354,37 @@ public class CodeGen {
 			}
 
 			@Override
-			public List<PDM.CodeInstr> visit(AST.IfStmt ifStmt, Mem.Frame arg) {
+			public List<PDM.CodeInstr> visit(AST.IfStmt ifStmt, Mem.Frame frame) {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(ifStmt);
+
 				String thenLabel = "then:" + labelCounter;
 				String elseLabel = "else:" + labelCounter;
-				String ifLabel = "if:" + labelCounter;
+				String condLAbel = "if-cond:" + labelCounter;
 				String endLabel = "end:" + labelCounter;
 				labelCounter++;
 
 				// Jump to the condition evaluation code
-				instrs.add(new PDM.NAME(ifLabel, loc));
+				instrs.add(new PDM.NAME(condLAbel, loc));
 				instrs.add(new PDM.UJMP(loc));
 
-				// If statement code
+				// Then statements code
 				instrs.add(new PDM.LABEL(thenLabel, loc));
-				instrs.addAll(ifStmt.thenStmts.accept(this, arg));
+				instrs.addAll(ifStmt.thenStmts.accept(this, frame));
+				// Jump out of the whole if statement
 				instrs.add(new PDM.NAME(endLabel, loc));
 				instrs.add(new PDM.UJMP(loc));
 
-				// Else statement code
+				// Else statements code
 				instrs.add(new PDM.LABEL(elseLabel, loc));
-				instrs.addAll(ifStmt.elseStmts.accept(this, arg));
+				instrs.addAll(ifStmt.elseStmts.accept(this, frame));
 				// Jump out of the whole if statement
 				instrs.add(new PDM.NAME(endLabel, loc));
 				instrs.add(new PDM.UJMP(loc));
 
 				// Condition evaluation code
-				instrs.add(new PDM.LABEL(ifLabel, loc));
-				instrs.addAll(ifStmt.cond.accept(this, arg));
+				instrs.add(new PDM.LABEL(condLAbel, loc));
+				instrs.addAll(ifStmt.cond.accept(this, frame));
 				instrs.add(new PDM.NAME(thenLabel, loc));
 				instrs.add(new PDM.NAME(elseLabel, loc));
 				instrs.add(new PDM.CJMP(loc));
@@ -412,6 +414,36 @@ public class CodeGen {
 				}
 
 				attrAST.attrCode.put(unExpr, instrs);
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.WhileStmt whileStmt, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(whileStmt);
+
+				String condLabel = "while-cond:" + labelCounter;
+				String doLabel = "do:" + labelCounter;
+				String endLabel = "end:" + labelCounter;
+				labelCounter++;
+
+				// Condition evaluation
+				instrs.add(new PDM.LABEL(condLabel, loc));
+				instrs.addAll(whileStmt.cond.accept(this, frame));
+				instrs.add(new PDM.NAME(doLabel, loc));
+				instrs.add(new PDM.NAME(endLabel, loc));
+				instrs.add(new PDM.CJMP(loc));
+
+				instrs.add(new PDM.LABEL(doLabel, loc));
+				instrs.addAll(whileStmt.stmts.accept(this, frame));
+				// Jump back to condition evaluation for the next loop
+				instrs.add(new PDM.NAME(condLabel, loc));
+				instrs.add(new PDM.UJMP(loc));
+
+				// Loop exit
+				instrs.add(new PDM.LABEL(endLabel, loc));
+
 
 				return instrs;
 			}

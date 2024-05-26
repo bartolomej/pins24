@@ -1,13 +1,10 @@
 fun main()=
     let
-        var mstThen="Condition is true\n\00"
-        var msgElse="Condition is false\n\00"
+        var msgThen="Condition is true\n\00"
     in
-        if (getint())
-        then
-            putstr(^mstThen)
-        else
-            putstr(^msgElse)
+        while (getint())
+        do
+            putstr(^msgThen)
         end,
 
         0
