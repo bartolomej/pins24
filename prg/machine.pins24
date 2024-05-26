@@ -1,8 +1,16 @@
 fun main()=
     let
-        var strptr="Hello World\n\00"
+        var mstThen="Condition is true\n\00"
+        var msgElse="Condition is false\n\00"
     in
-        putstr(^strptr)
+        if (getint())
+        then
+            putstr(^mstThen)
+        else
+            putstr(^msgElse)
+        end,
+
+        0
     end
 
 fun exit(exitcode)

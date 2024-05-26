@@ -354,6 +354,46 @@ public class CodeGen {
 			}
 
 			@Override
+			public List<PDM.CodeInstr> visit(AST.IfStmt ifStmt, Mem.Frame arg) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(ifStmt);
+				String thenLabel = "then:" + labelCounter;
+				String elseLabel = "else:" + labelCounter;
+				String ifLabel = "if:" + labelCounter;
+				String endLabel = "end:" + labelCounter;
+				labelCounter++;
+
+				// Jump to the condition evaluation code
+				instrs.add(new PDM.NAME(ifLabel, loc));
+				instrs.add(new PDM.UJMP(loc));
+
+				// If statement code
+				instrs.add(new PDM.LABEL(thenLabel, loc));
+				instrs.addAll(ifStmt.thenStmts.accept(this, arg));
+				instrs.add(new PDM.NAME(endLabel, loc));
+				instrs.add(new PDM.UJMP(loc));
+
+				// Else statement code
+				instrs.add(new PDM.LABEL(elseLabel, loc));
+				instrs.addAll(ifStmt.elseStmts.accept(this, arg));
+				// Jump out of the whole if statement
+				instrs.add(new PDM.NAME(endLabel, loc));
+				instrs.add(new PDM.UJMP(loc));
+
+				// Condition evaluation code
+				instrs.add(new PDM.LABEL(ifLabel, loc));
+				instrs.addAll(ifStmt.cond.accept(this, arg));
+				instrs.add(new PDM.NAME(thenLabel, loc));
+				instrs.add(new PDM.NAME(elseLabel, loc));
+				instrs.add(new PDM.CJMP(loc));
+
+				// We jump here when exiting the whole if statement
+				instrs.add(new PDM.LABEL(endLabel, loc));
+
+				return instrs;
+			}
+
+			@Override
 			public List<PDM.CodeInstr> visit(AST.UnExpr unExpr, Mem.Frame frame) {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(unExpr);
