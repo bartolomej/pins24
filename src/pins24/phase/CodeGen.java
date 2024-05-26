@@ -307,13 +307,10 @@ public class CodeGen {
 
 				instrs.addAll(assignStmt.srcExpr.accept(this, frame));
 
-				instrs.addAll(assignStmt.dstExpr.accept(this, frame));
-				if (assignStmt.dstExpr instanceof AST.VarExpr) {
-					// TODO: Find a better solution
-					// The last command is LOAD,
-					// but we need the variable address at the top of the stack here.
-					instrs.removeLast();
-				}
+				List<PDM.CodeInstr> dstInstrs = assignStmt.dstExpr.accept(this, frame);
+				temporarilyRemoveLastLoad(dstInstrs);
+				instrs.addAll(dstInstrs);
+
 				instrs.add(new PDM.SAVE(loc));
 
 				attrAST.attrCode.put(assignStmt, instrs);
@@ -355,6 +352,41 @@ public class CodeGen {
 
 				return instrs;
 			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.UnExpr unExpr, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(unExpr);
+
+
+				switch (unExpr.oper) {
+					case MEMADDR -> {
+						List<PDM.CodeInstr> nestedInstrs = unExpr.expr.accept(this, frame);
+						temporarilyRemoveLastLoad(nestedInstrs);
+						instrs.addAll(nestedInstrs);
+					}
+					case VALUEAT -> {}
+					case ADD -> {}
+					case NOT -> {}
+					case SUB -> {}
+				}
+
+				attrAST.attrCode.put(unExpr, instrs);
+
+				return instrs;
+			}
+
+			private void temporarilyRemoveLastLoad(List<PDM.CodeInstr> instrs) {
+				if (instrs.getLast() instanceof PDM.LOAD) {
+					// TODO: Find a better solution
+					// The last command is LOAD,
+					// but we need the variable address at the top of the stack here.
+					instrs.removeLast();
+				} else {
+					throw new Report.InternalError("Expected LOAD as the last instruction");
+				}
+			}
+
 		}
 
 	}

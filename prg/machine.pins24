@@ -1,10 +1,8 @@
 fun main()=
     let
-        var strptr=0
+        var strptr="Hello World\n\00"
     in
-        strptr=new(10),
-        getstr(strptr),
-        putstr(strptr)
+        putstr(^strptr)
     end
 
 fun exit(exitcode)
