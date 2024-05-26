@@ -1,4 +1,11 @@
-fun main()=getstr(new(10))
+fun main()=
+    let
+        var strptr=0
+    in
+        strptr=new(10),
+        getstr(strptr),
+        putstr(strptr)
+    end
 
 fun exit(exitcode)
 fun getint()

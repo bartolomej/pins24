@@ -164,6 +164,26 @@ public class Memory {
 		return attrAST;
 	}
 
+	public static Vector<Integer> decodeInits(AST.VarDef varDef, AttrAST attrAST) {
+		final Vector<Integer> inits = new Vector<Integer>();
+
+		// The very first element must indicate the number of total initializers.
+		inits.add(varDef.inits.size());
+
+		for (AST.Init init : varDef.inits) {
+			int num = decodeConst(init.num, attrAST).getFirst();
+
+			// Indicate the number of repetitions of the next group of values (many in case of string)
+			inits.add(num);
+
+			Vector<Integer> valueGroup = decodeConst(init.value, attrAST);
+			inits.add(valueGroup.size());
+			inits.addAll(valueGroup);
+		}
+
+		return inits;
+	}
+
 	public static Vector<Integer> decodeConst(final AST.AtomExpr atomExpr, AttrAST attrAST) {
 		final Vector<Integer> value = new Vector<Integer>();
 		switch (atomExpr.type) {
@@ -251,7 +271,7 @@ public class Memory {
 
 			@Override
 			public Object visit(AST.VarDef varDef, Object arg) {
-				Vector<Integer> inits = decodeInits(varDef);
+				Vector<Integer> inits = decodeInits(varDef, attrAST);
 				int varSize = getVariableSizeInBytes(inits);
 				int currentDepth = frameComputedFieldsStack.size();
 				if (currentDepth == 0) {
@@ -345,26 +365,6 @@ public class Memory {
 				i += 2 + sizeOfValueGroup;
 			}
 			return totalSizeInBytes;
-		}
-
-		private Vector<Integer> decodeInits(AST.VarDef varDef) {
-			final Vector<Integer> inits = new Vector<Integer>();
-
-			// The very first element must indicate the number of total initializers.
-			inits.add(varDef.inits.size());
-
-			for (AST.Init init : varDef.inits) {
-				int num = decodeConst(init.num, attrAST).getFirst();
-
-				// Indicate the number of repetitions of the next group of values (many in case of string)
-				inits.add(num);
-
-				Vector<Integer> valueGroup = decodeConst(init.value, attrAST);
-				inits.add(valueGroup.size());
-				inits.addAll(valueGroup);
-			}
-
-			return inits;
 		}
 
         // --- ZAGON ---

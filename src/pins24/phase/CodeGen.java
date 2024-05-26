@@ -177,15 +177,20 @@ public class CodeGen {
 
 				instrs.add(new PDM.LABEL(funDef.name, loc));
 
-				// Initialize the memory space for all the local variables.
+				// Size of FP + RA
+				int omittedPointerSizes = 8;
+				if (frame.varsSize < omittedPointerSizes) {
+					throw new Report.InternalError("Invalid vars size");
+				}
+
+				// Initialize the memory space for all the local variables (accepts a negative operand).
 				// Note that `varsSize` includes the size of FP and RA.
-				instrs.add(new PDM.PUSH(frame.varsSize - 8, loc));
+				instrs.add(new PDM.PUSH(-(frame.varsSize - omittedPointerSizes), loc));
 				instrs.add(new PDM.POPN(loc));
 
 
 				// TODO: Do we need to do the same for params?
-				List<PDM.CodeInstr> childInstr = funDef.stmts.accept(this, frame);
-				instrs.addAll(childInstr);
+				instrs.addAll(funDef.stmts.accept(this, frame));
 
 				// Note tat `parsSize` includes the size of SL
 				instrs.add(new PDM.PUSH(frame.parsSize - 4, loc));
@@ -215,8 +220,7 @@ public class CodeGen {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(callExpr);
 
-				List<PDM.CodeInstr> childInstr = callExpr.args.accept(this, frame);
-				instrs.addAll(childInstr);
+				instrs.addAll(callExpr.args.accept(this, frame));
 
 				// Push static link
 				instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
@@ -224,6 +228,8 @@ public class CodeGen {
 
 				instrs.add(new PDM.NAME(callExpr.name, loc));
 				instrs.add(new PDM.CALL(frame, loc));
+
+				attrAST.attrCode.put(callExpr, instrs);
 
 				return instrs;
 			}
@@ -237,6 +243,115 @@ public class CodeGen {
 				for (Integer value : values) {
 					instrs.add(new PDM.PUSH(value, loc));
 				}
+
+				attrAST.attrCode.put(atomExpr, instrs);
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.LetStmt letStmt, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+
+				instrs.addAll(letStmt.defs.accept(this, frame));
+				instrs.addAll(letStmt.stmts.accept(this, frame));
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.VarDef varDef, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(varDef);
+				Mem.Access access = attrAST.attrVarAccess.get(varDef);
+
+				switch (access) {
+					case final Mem.RelAccess relAccess: {
+						String dataLabelName = ":" + labelCounter;
+						labelCounter++;
+
+						// Prepare data instructions
+						List<PDM.DataInstr> dataInstrs = new ArrayList<>();
+						dataInstrs.add(new PDM.LABEL(dataLabelName, loc));
+						List<Integer> decodedInits = Memory.decodeInits(varDef, attrAST);
+						for (Integer decodedInit : decodedInits) {
+							dataInstrs.add(new PDM.DATA(decodedInit, loc));
+						}
+						attrAST.attrData.put(varDef, dataInstrs);
+
+						// Prepare code instructions
+						instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
+						instrs.add(new PDM.PUSH(relAccess.offset, loc));
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+						instrs.add(new PDM.NAME(dataLabelName, loc));
+						instrs.add(new PDM.INIT(loc));
+						break;
+					}
+					case final Mem.AbsAccess absAccess: {
+						// TODO
+						break;
+					}
+					default:
+						throw new Report.InternalError("Unreachable");
+				}
+
+				attrAST.attrCode.put(varDef, instrs);
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.AssignStmt assignStmt, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(assignStmt);
+
+				instrs.addAll(assignStmt.srcExpr.accept(this, frame));
+
+				instrs.addAll(assignStmt.dstExpr.accept(this, frame));
+				if (assignStmt.dstExpr instanceof AST.VarExpr) {
+					// TODO: Find a better solution
+					// The last command is LOAD,
+					// but we need the variable address at the top of the stack here.
+					instrs.removeLast();
+				}
+				instrs.add(new PDM.SAVE(loc));
+
+				attrAST.attrCode.put(assignStmt, instrs);
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.VarExpr varExpr, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(varExpr);
+				AST.Def def = attrAST.attrDef.get(varExpr);
+
+				if (!(def instanceof AST.VarDef)) {
+					throw new Report.InternalError("Unreachable");
+				}
+
+				Mem.Access access = attrAST.attrVarAccess.get(def);
+
+				switch (access) {
+					case final Mem.RelAccess relAccess: {
+						instrs.add(new PDM.PUSH(relAccess.offset, loc));
+						instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+						// TODO: Decide if we should load the value or not
+						// See: https://discord.com/channels/370216420199628800/483365879082385428/1244290276294656072
+						instrs.add(new PDM.LOAD(loc));
+						break;
+					}
+					case final Mem.AbsAccess absAccess: {
+						// TODO:
+						break;
+					}
+					default:
+						throw new Report.InternalError("Unreachable");
+				}
+
+				attrAST.attrCode.put(varExpr, instrs);
 
 				return instrs;
 			}
