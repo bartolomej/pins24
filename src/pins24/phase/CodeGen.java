@@ -16,7 +16,7 @@ public class CodeGen {
 	/**
 	 * Abstraktno sintaksno drevo z dodanimi atributi izracuna pomnilniske
 	 * predstavitve.
-	 * 
+	 *
 	 * Atributi:
 	 * <ol>
 	 * <li>({@link Abstr}) lokacija kode, ki pripada posameznemu vozliscu;</li>
@@ -39,7 +39,7 @@ public class CodeGen {
 
 		/**
 		 * Ustvari novo abstraktno sintaksno drevo z dodanimi atributi generiranja kode.
-		 * 
+		 *
 		 * @param attrAST  Abstraktno sintaksno drevo z dodanimi atributi pomnilniske
 		 *                 predstavitve.
 		 * @param attrCode Attribut: seznam ukazov, ki predstavljajo kodo programa.
@@ -54,7 +54,7 @@ public class CodeGen {
 
 		/**
 		 * Ustvari novo abstraktno sintaksno drevo z dodanimi atributi generiranja kode.
-		 * 
+		 *
 		 * @param attrAST Abstraktno sintaksno drevo z dodanimi atributi generiranja
 		 *                kode.
 		 */
@@ -109,7 +109,7 @@ public class CodeGen {
 
 	/**
 	 * Izracuna kodo programa
-	 * 
+	 *
 	 * @param memoryAttrAST Abstraktno sintaksno drevo z dodanimi atributi izracuna
 	 *                      pomnilniske predstavitve.
 	 * @return Abstraktno sintaksno drevo z dodanimi atributi izracuna pomnilniske
@@ -138,7 +138,7 @@ public class CodeGen {
 
 		/**
 		 * Ustvari nov generator kode v abstraktnem sintaksnem drevesu.
-		 * 
+		 *
 		 * @param attrAST Abstraktno sintaksno drevo z dodanimi atributi izracuna
 		 *                pomnilniske predstavitve.
 		 */
@@ -148,7 +148,7 @@ public class CodeGen {
 
 		/**
 		 * Sprozi generiranje kode v abstraktnem sintaksnem drevesu.
-		 * 
+		 *
 		 * @return Abstraktno sintaksno drevo z dodanimi atributi izracuna pomnilniske
 		 *         predstavitve.
 		 */
@@ -269,21 +269,19 @@ public class CodeGen {
 				Report.Locatable loc = attrAST.attrLoc.get(varDef);
 				Mem.Access access = attrAST.attrVarAccess.get(varDef);
 
+				String dataLabelName = ":" + labelCounter;
+				labelCounter++;
+
+				// Prepare data instructions
+				List<PDM.DataInstr> dataInstrs = new ArrayList<>();
+				dataInstrs.add(new PDM.LABEL(dataLabelName, loc));
+				List<Integer> decodedInits = Memory.decodeInits(varDef, attrAST);
+				for (Integer decodedInit : decodedInits) {
+					dataInstrs.add(new PDM.DATA(decodedInit, loc));
+				}
+
 				switch (access) {
 					case final Mem.RelAccess relAccess: {
-						String dataLabelName = ":" + labelCounter;
-						labelCounter++;
-
-						// Prepare data instructions
-						List<PDM.DataInstr> dataInstrs = new ArrayList<>();
-						dataInstrs.add(new PDM.LABEL(dataLabelName, loc));
-						List<Integer> decodedInits = Memory.decodeInits(varDef, attrAST);
-						for (Integer decodedInit : decodedInits) {
-							dataInstrs.add(new PDM.DATA(decodedInit, loc));
-						}
-						attrAST.attrData.put(varDef, dataInstrs);
-
-						// Prepare code instructions
 						instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
 						instrs.add(new PDM.PUSH(relAccess.offset, loc));
 						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
@@ -292,13 +290,20 @@ public class CodeGen {
 						break;
 					}
 					case final Mem.AbsAccess absAccess: {
-						// TODO
+						dataInstrs.add(new PDM.LABEL(absAccess.name, loc));
+						dataInstrs.add(new PDM.SIZE(absAccess.size, loc));
+
+						instrs.add(new PDM.NAME(absAccess.name, loc));
+						instrs.add(new PDM.NAME(dataLabelName, loc));
+						instrs.add(new PDM.INIT(loc));
 						break;
 					}
 					default:
 						throw new Report.InternalError("Unreachable");
 				}
 
+
+				attrAST.attrData.put(varDef, dataInstrs);
 				attrAST.attrCode.put(varDef, instrs);
 
 				return instrs;
@@ -347,18 +352,19 @@ public class CodeGen {
 						instrs.add(new PDM.PUSH(relAccess.offset, loc));
 						instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
 						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
-						// TODO: Decide if we should load the value or not
-						// See: https://discord.com/channels/370216420199628800/483365879082385428/1244290276294656072
-						instrs.add(new PDM.LOAD(loc));
 						break;
 					}
 					case final Mem.AbsAccess absAccess: {
-						// TODO:
+						instrs.add(new PDM.NAME(absAccess.name, loc));
 						break;
 					}
 					default:
 						throw new Report.InternalError("Unreachable");
 				}
+
+				// TODO: Decide if we should load the value or not
+				// See: https://discord.com/channels/370216420199628800/483365879082385428/1244290276294656072
+				instrs.add(new PDM.LOAD(loc));
 
 				attrAST.attrCode.put(varExpr, instrs);
 
@@ -547,7 +553,7 @@ public class CodeGen {
 
 		/**
 		 * Izracuna seznam ukazov, ki predstavljajo kodo programa.
-		 * 
+		 *
 		 * @return Seznam ukazov, ki predstavljajo kodo programa.
 		 */
 		public List<PDM.CodeInstr> codeSegment() {
@@ -634,7 +640,7 @@ public class CodeGen {
 
 		/**
 		 * Izracuna seznam ukazov, ki predstavljajo podatke programa.
-		 * 
+		 *
 		 * @return Seznam ukazov, ki predstavljajo podatke programa.
 		 */
 		public List<PDM.DataInstr> dataSegment() {
@@ -676,7 +682,7 @@ public class CodeGen {
 
 	/**
 	 * Zagon izracuna pomnilniske predstavitve kot samostojnega programa.
-	 * 
+	 *
 	 * @param cmdLineArgs Argumenti v ukazni vrstici.
 	 */
 	public static void main(final String[] cmdLineArgs) {

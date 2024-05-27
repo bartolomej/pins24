@@ -1,14 +1,21 @@
-fun main()=
-    let
-        var newlinestr = "\n\00"
-    in
-        putint(inc(1, 2, 3, 4)),
-        putstr(^newlinestr),
+fun main() =
+    putstr(^hello),
 
-        0
-    end
+    # Should this work as well?
+    # (hello + 2)^ = 65,
 
-fun inc(a, b, c, d) = a + b * c + d
+    # This assigns the address of the right string to variable hello
+    # hello = "Bye\n\00",
+
+    hello = 'B',
+    (^hello + 4)^ = 'y',
+    (^hello + 8)^ = 'e',
+    (^hello + 12)^ = '\n',
+    (^hello + 16)^ = '\00',
+    putstr(^hello)
+
+
+var hello = "Hello\n\00"
 
 fun exit(exitcode)
 fun getint()
