@@ -2,11 +2,13 @@ fun main()=
     let
         var newlinestr = "\n\00"
     in
-        putint(1 + 2 * 2 == 5 && 1 + 2 == 2 + 1),
+        putint(inc(1, 2, 3, 4)),
         putstr(^newlinestr),
 
         0
     end
+
+fun inc(a, b, c, d) = a + b * c + d
 
 fun exit(exitcode)
 fun getint()

@@ -220,7 +220,11 @@ public class CodeGen {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(callExpr);
 
-				instrs.addAll(callExpr.args.accept(this, frame));
+				// According to semantic rules,
+				// function arguments are evaluated from right to left.
+				for (int i = callExpr.args.size() - 1; i >= 0; i--) {
+					instrs.addAll(callExpr.args.get(i).accept(this, frame));
+				}
 
 				// Push static link
 				instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
@@ -324,11 +328,19 @@ public class CodeGen {
 				Report.Locatable loc = attrAST.attrLoc.get(varExpr);
 				AST.Def def = attrAST.attrDef.get(varExpr);
 
-				if (!(def instanceof AST.VarDef)) {
-					throw new Report.InternalError("Unreachable");
+				Mem.Access access;
+				switch (def) {
+					case final AST.VarDef varDef: {
+						access = attrAST.attrVarAccess.get(varDef);
+						break;
+					}
+					case final AST.ParDef parDef: {
+						access = attrAST.attrParAccess.get(parDef);
+						break;
+					}
+					default:
+						throw new Report.InternalError("Unreachable");
 				}
-
-				Mem.Access access = attrAST.attrVarAccess.get(def);
 
 				switch (access) {
 					case final Mem.RelAccess relAccess: {
