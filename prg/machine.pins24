@@ -1,21 +1,39 @@
+# TODO: Handle nested functions
+# TODO: Handle leftover binary expressions
+# TODO: Fix pointer arithmetic / assignments
 fun main() =
-    putstr(^hello),
 
     # Should this work as well?
     # (hello + 2)^ = 65,
 
-    # This assigns the address of the right string to variable hello
-    # hello = "Bye\n\00",
+    # TODO: This doesn't work yet
+    # strcpy(^hello, "Hello\n\00"),
 
-    hello = 'B',
-    (^hello + 4)^ = 'y',
-    (^hello + 8)^ = 'e',
-    (^hello + 12)^ = '\n',
-    (^hello + 16)^ = '\00',
+    putstr(^hello),
+    strcpy(^hello, ^bye),
     putstr(^hello)
 
 
 var hello = "Hello\n\00"
+var bye = "Bye\n\00"
+var newline = "\n\00"
+
+# Copies the string at src_ptr to dst_ptr address
+# Expects len(dst_ptr) >= len(src_ptr)
+# TODO: Handle error cases
+fun strcpy(dst_ptr, src_ptr) =
+    let
+        var offset = 0
+    in
+        while ((src_ptr + offset)^ != 0)
+        do
+            (dst_ptr + offset)^ = (src_ptr + offset)^,
+            offset = offset + 4
+        end,
+        # Null terminate the destination string
+        (dst_ptr + offset)^ = '\00'
+    end,
+    0
 
 fun exit(exitcode)
 fun getint()
