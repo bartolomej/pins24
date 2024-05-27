@@ -400,7 +400,6 @@ public class CodeGen {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(unExpr);
 
-
 				List<PDM.CodeInstr> nestedInstrs = unExpr.expr.accept(this, frame);
 
 				if (unExpr.oper == AST.UnExpr.Oper.MEMADDR) {
@@ -426,6 +425,35 @@ public class CodeGen {
                 }
 
 				attrAST.attrCode.put(unExpr, instrs);
+
+				return instrs;
+			}
+
+			@Override
+			public List<PDM.CodeInstr> visit(AST.BinExpr binExpr, Mem.Frame frame) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				Report.Locatable loc = attrAST.attrLoc.get(binExpr);
+
+				// Semantic rule says to first calculate the right and then left operand
+				instrs.addAll(binExpr.sndExpr.accept(this, frame));
+				instrs.addAll(binExpr.fstExpr.accept(this, frame));
+
+				switch (binExpr.oper) {
+					case OR -> instrs.add(new PDM.OPER(PDM.OPER.Oper.OR, loc));
+					case AND -> instrs.add(new PDM.OPER(PDM.OPER.Oper.AND, loc));
+					case EQU -> instrs.add(new PDM.OPER(PDM.OPER.Oper.EQU, loc));
+					case GEQ -> instrs.add(new PDM.OPER(PDM.OPER.Oper.LEQ, loc));
+					case LEQ -> instrs.add(new PDM.OPER(PDM.OPER.Oper.GEQ, loc));
+					case GTH -> instrs.add(new PDM.OPER(PDM.OPER.Oper.LTH, loc));
+					case LTH -> instrs.add(new PDM.OPER(PDM.OPER.Oper.GTH, loc));
+					case ADD -> instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+					case MUL -> instrs.add(new PDM.OPER(PDM.OPER.Oper.MUL, loc));
+					case NEQ -> instrs.add(new PDM.OPER(PDM.OPER.Oper.NEQ, loc));
+					// TODO: Implement these operations
+					case DIV -> {}
+					case SUB -> {}
+					case MOD -> {}
+				}
 
 				return instrs;
 			}

@@ -1,12 +1,8 @@
 fun main()=
     let
-        var str = "\01"
         var newlinestr = "\n\00"
-        var strptr = 0
     in
-        strptr = ^str,
-        putint(-(strptr^)),
-        putint(!(strptr^)),
+        putint(1 + 2 * 2 == 5 && 1 + 2 == 2 + 1),
         putstr(^newlinestr),
 
         0
