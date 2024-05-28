@@ -390,6 +390,14 @@ public class SynAn implements AutoCloseable {
 			initializers.add(initializer);
 			isOptional = false;
 		} while (match(Token.Symbol.COMMA));
+
+		if (initializers.isEmpty()) {
+			initializers.add(new AST.Init(
+					new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "1"),
+					new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, "0")
+			));
+		}
+
 		return initializers;
 	}
 

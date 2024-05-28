@@ -1,14 +1,66 @@
-# TODO: Handle leftover binary expressions
-# TODO: Fix pointer arithmetic / assignments
-# TODO: Double check string serialization (maybe allow \0 instead of just \00)
-# TODO: Should this work as well `(hello + 2)^ = 65`?
 fun main() =
-    putstr("Hello World\n\00")
+    let
+        var tab = 3, 2, 1, 4, 8, 9, 5, 6, 7
+        var n = 9
+        var st =
+    in
+        putstr("NEUREJENO:\n\00"),
+        while (st < n)
+                do
+                    putint((^tab + 4*st)^),
+                    putstr(" \00"),
+                    st = st + 1
+                end,
+        putstr("\n\00"),
+        selectSort(^tab, n),
+        putstr("SELECTION SORT:\n\00"),
 
-fun exit(exitcode)
-fun getint()
-fun putint(value)
-fun getstr(straddr)
-fun putstr(straddr)
-fun new(size)
-fun del(straddr)
+        st = 0,
+        while (st < n)
+        do
+            putint((^tab + 4*st)^),
+            putstr(" \00"),
+            st = st + 1
+
+        end,
+        putstr("\n\00"),
+        0
+    end
+
+fun selectSort(p, n) =
+    let
+        var minP =
+        var i = 0
+        var j = 0
+    in
+        while (i < n-1)
+        do
+            minP = p + i*4,
+            j = i + 1,
+            while (j < n)
+            do
+                if( (p + 4*j)^  <  minP^ )
+                then
+                    minP = (p + 4*j)
+                end,
+                j = j + 1
+            end,
+
+            swap(minP, (p + i*4)),
+            i = i + 1
+        end,
+        0
+    end
+
+fun swap(p1, p2) =
+    let
+        var tmp =
+    in
+        tmp = p1^,
+        p1^ = p2^,
+        p2^ = tmp,
+        0
+    end
+
+fun putint(int)
+fun putstr(addr)
