@@ -1,0 +1,53 @@
+# Test 18 - Combination of k numbers that sum up to n
+# x1 + x2 + ... + xk = n
+# a <= k <= b
+
+# Constraints:
+# a <= b <= n
+# a > 1
+
+var a = 2
+var b = 4
+var n = 5
+
+# Prints possible combinations
+# Returns number of combinations
+fun sum(i, total) =
+    let
+        var result = 0
+        var st = 1
+        var j = 1
+    in
+        if total > n || i > b then
+            result = 0
+        else
+            if total == n && i >= a then
+                putint(digits^),
+                while j < i do
+                    putstr(" + \00"),
+                    putint((digits + 4 * j)^),
+                    j = j + 1
+                end,
+                putstr(" = \00"),
+                putint(total),
+                putstr("\n\00"),
+                result = 1
+            end,
+
+            while st < n do
+                (digits + 4 * i)^ = st,
+                result = result + sum(i + 1, total + st),
+                st = st + 1
+            end
+        end,
+        result
+    end
+
+var digits = 0
+fun main() =
+    digits = new(4 * n),
+    sum(0, 0)
+
+fun putint(int)
+fun putstr(straddr)
+fun new(size)

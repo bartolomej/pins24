@@ -1,0 +1,13 @@
+# Test 03 - Sum of global and local variables
+
+var a = 2
+var b = 3
+var c = 5
+
+fun main() =
+    let
+        var a = 7
+        var b = 11
+    in
+        a + b + c # returns 23
+    end

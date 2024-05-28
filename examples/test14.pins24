@@ -1,0 +1,18 @@
+# Test 14 - While statement and if statement
+
+var x = 20
+
+fun main() =
+    while x > 0 do
+        putint(x),
+        if x % 2 == 0 then
+            putstr(" is even\n\00")
+        else
+            putstr(" is odd\n\00")
+        end,
+        x = x - 1
+    end,
+    0
+
+fun putint(int)
+fun putstr(straddr)

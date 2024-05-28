@@ -1,0 +1,186 @@
+# Test 17 - 3x3 matrix multiplication
+
+fun main() =
+    let
+        var M1 = 0
+        var M2 = 0
+        var M3 = 0
+    in
+        # [ 1, 2, 3 ]
+        # [ 4, 5, 6 ]
+        # [ 7, 8, 9 ]
+        M1 = matrixCreate(1, 2, 3, 4, 5, 6, 7, 8, 9),
+
+        # [ 10, 11, 12 ]
+        # [ 13, 14, 15 ]
+        # [ 16, 17, 18 ]
+        M2 = matrixCreate(10, 11, 12, 13, 14, 15, 16, 17, 18),
+
+        # [  84,  90,  96 ]
+        # [ 201, 216, 231 ]
+        # [ 318, 342, 366 ]
+        M3 = matrixMultiply(M1, M2, 3),
+
+        putstr("Matrix M1:\n\00"),
+        matrixPrint(M1, 3),
+        putstr("Matrix M2:\n\00"),
+        matrixPrint(M2, 3),
+        putstr("\nM1 * M2 = \n\00"),
+        matrixPrint(M3, 3)
+    end
+
+# Creates new 3x3 matrix:
+# [ a11, a12, a13 ]
+# [ a21, a22, a23 ]
+# [ a31, a32, a33 ]
+fun matrixCreate(a11, a12, a13, a21, a22, a23, a31, a32, a33) =
+    let
+        var M = 0
+        var n = 3
+        var i = 0
+    in
+        M = new(n * 4),
+        while i < n do
+            (M + 4 * i)^ = new(n * 4),
+            i = i + 1
+        end,
+        M^^ = a11,              # M[0][0]
+        (M^ + 4)^ = a12,        # M[0][1]
+        (M^ + 8)^ = a13,        # M[0][2]
+        (M + 4)^^ = a21,        # M[1][0]
+        ((M + 4)^ + 4)^ = a22,  # M[1][1]
+        ((M + 4)^ + 8)^ = a23,  # M[1][2]
+        (M + 8)^^ = a31,        # M[2][0]
+        ((M + 8)^ + 4)^ = a32,  # M[2][1]
+        ((M + 8)^ + 8)^ = a33,  # M[2][2]
+        M
+    end
+
+# Creates new n x n null matrix:
+# [ 0, ... , 0 ]
+# [ .,     , . ]
+# [ .,     , . ]
+# [ 0, ... , 0 ]
+fun matrixNull(n) =
+    let
+        var M = 0
+        var i = 0
+        var j = 0
+    in
+        M = new(n * 4),
+        while i < n do
+            (M + 4 * i)^ = new(n * 4),
+            i = i + 1
+        end,
+        M
+    end
+
+
+# Multiplies two square matrices n x n
+fun matrixMultiply(M_1, M_2, n) =
+    let
+        var i = 0
+        var j = 0
+        var k = 0
+        var M_result = 0
+    in
+        M_result = matrixNull(n),
+        i = 0,
+        while i < n do
+            j = 0,
+            while j < n do
+                k = 0,
+                while k < n do
+                    ((M_result + 4 * i)^ + 4 * j)^ = ((M_result + 4 * i)^ + 4 * j)^ + ((M_1 + 4 * i)^ + 4 * k)^ * ((M_2 + 4 * k)^ + 4 * j)^,
+                    k = k + 1
+                end,
+                j = j + 1
+            end,
+            i = i + 1
+        end,
+        M_result
+    end
+
+# Returns number of digits including negative sign
+fun digits(n) =
+    let
+        var digits = 0
+    in
+        if n == 0 then
+            digits = 1
+        else
+            if n < 0 then
+                digits = digits + 1,
+                while n < 0 do
+                    n = n / 10,
+                    digits = digits + 1
+                end
+            else
+                while n > 0 do
+                    n = n / 10,
+                    digits = digits + 1
+                end
+            end
+        end,
+        digits
+    end
+
+# Prints indent
+fun indentPrint(indent) =
+    let
+        var i = 0
+    in
+        while i < indent do
+            putstr(" \00"),
+            i = i + 1
+        end,
+        0
+    end
+
+# Prints square matrix n x n and formats it
+fun matrixPrint(M, n) =
+    let
+        var r = 0
+        var i = 0
+        var j = 0
+        var maxDigits = 0
+        var d = 0
+    in
+        maxDigits = new(n * 4),
+        j = 0,
+        while j < n do
+            i = 0,
+            (maxDigits + 4 * j)^ = 0,
+            while i < n do
+                d = digits(((M + 4 * i)^ + 4 * j)^),
+                if d > (maxDigits + 4 * j)^ then
+                    (maxDigits + 4 * j)^ = d
+                end,
+                i = i + 1
+            end,
+            #putint((maxDigits + 4 * j)^),
+            #putstr("\n\00"),
+            j = j + 1
+        end,
+
+        i = 0,
+        while i < n do
+            j = 0,
+            putstr("[ \00"),
+            while j < n do
+                indentPrint((maxDigits + 4 * j)^ - digits(((M + 4 * i)^ + 4 * j)^)),
+                putint(((M + 4 * i)^ + 4 * j)^),
+                if j < n - 1 then
+                    putstr(", \00")
+                end,
+                j = j + 1
+            end,
+            putstr(" ]\n\00"),
+            i = i + 1
+        end,
+        0
+    end
+
+fun putint(int)
+fun putstr(straddr)
+fun new(size)

@@ -1,0 +1,29 @@
+# Test 08 - Nested functions without parameters and variables (multiple let statements)
+
+var a = 0
+var b = 0
+
+fun main() = f1()
+
+fun f1() =
+    let
+        fun f2() =
+            let
+                fun f3() = 3
+            in
+                f3()
+            end
+    in
+        a = f2()
+    end,
+    let
+        fun f2() =
+            let
+                fun f3() = 7
+            in
+                f3()
+            end
+    in
+        b = f2()
+    end,
+    a + b # returns 10

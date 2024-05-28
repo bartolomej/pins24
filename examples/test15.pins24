@@ -1,0 +1,22 @@
+# Test 15 - Nested if statements
+
+var points = 80
+var ocena = 5
+
+fun main() =
+    if points >= 50 then
+        ocena = 6,
+        if points >= 60 then
+            ocena = 7,
+            if points >= 70 then
+                ocena = 8,
+                if points >= 80 then
+                    ocena = 9,
+                    if points >= 90 then
+                        ocena = 10
+                    end
+                end
+            end
+        end
+    end,
+    ocena

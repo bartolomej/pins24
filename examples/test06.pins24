@@ -1,0 +1,27 @@
+# Test 06 - Unary expressions and arrays
+
+var a = 0
+var b = 2
+var c = 3
+var d = 5
+var e = 7 * 11
+
+fun main() =
+    # Unary expression NOT
+    a = !a, # a = 1
+    b = !b, # b = 0
+
+    # Unary expression ADD
+    c = +c, # c = 3
+
+    # Unary expression SUB
+    d = -d, # d = -5
+
+    # Unary expression VALUEAT
+    e = 3, # e[0] = 3
+
+    # Unary expression MEMADDR
+    (^e + 4)^ = 4, # e[1] = 4
+
+    # 1 + 0 + 3 - 5 + e[0] +   e[1]    +   e[2]
+      a + b + c + d +  e   + (^e + 4)^ + (^e + 8)^ # returns 17 ()

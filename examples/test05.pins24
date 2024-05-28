@@ -1,0 +1,8 @@
+# Test 05 - Assign statement
+
+var x = 2
+var y = 3
+
+fun main() =
+    x = y,
+    x # returns 3

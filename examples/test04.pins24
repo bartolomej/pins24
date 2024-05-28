@@ -1,0 +1,14 @@
+# Test 04 - Sum of global and local variables
+
+var a = 2
+var b = 3
+var c = 5
+
+fun main() =
+    let
+        var a = 7
+        var b = 11
+    in
+        0
+    end,
+    a + b + c # returns 10

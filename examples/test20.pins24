@@ -1,0 +1,116 @@
+# Test 20 - Quicksort
+
+var n = 30
+var min_number = 1
+var max_number = 20
+
+fun partition(arr, low, high) =
+    let
+        var p = 0
+        var i = 0
+        var j = 0
+        var tmp = 0
+    in
+        p = (arr + 4 * high)^,
+        i = low - 1,
+        j = low,
+        while j <= high do
+            if (arr + 4 * j)^ < p then
+                i = i + 1,
+                swap(arr + 4 * j, arr + 4 * i)
+            end,
+            j = j + 1
+        end,
+        swap(arr + 4 * high, arr + 4 * (i + 1)),
+        i + 1
+    end
+
+fun quick(arr, low, high) =
+    let
+        var p = 0
+    in
+        if low < high then
+            p = partition(arr, low, high),
+            quick(arr, low, p - 1),
+            quick(arr, p + 1, high)
+        end
+    end,
+    0
+
+fun quicksort(arr, n) =
+    quick(arr, 0, n - 1)
+
+fun main() =
+    let
+        var arr = 0
+    in
+        arr = arrayGenerate(n, min_number, max_number),
+        putstr("Unsorted array:\n\00"),
+        arrayPrint(arr, n),
+        quicksort(arr, n),
+        putstr("Sorted array:\n\00"),
+        arrayPrint(arr, n)
+    end,
+    0
+
+# Swaps two addresses (addr1 <-> addr2)
+fun swap(addr1, addr2) =
+    let
+        var tmp = 0
+    in
+        tmp = (addr1)^,
+        (addr1)^ = (addr2)^,
+        (addr2)^ = tmp
+    end,
+    0
+
+# Prints out array
+fun arrayPrint(arr, n) =
+    let
+        var i = 0
+    in
+        putstr("[\00"),
+        while i < n - 1 do
+            putint((arr + 4 * i)^),
+            putstr(", \00"),
+            i = i + 1
+        end,
+        putint((arr + 4 * i)^),
+        putstr("]\n\00")
+    end,
+    0
+
+# Generates new array of length n and fills it up with elements [min, max]
+fun arrayGenerate(n, min, max) =
+    let
+        var i = 0
+        var arr = 0
+    in
+        arr = new(4 * n),
+        while i < n do
+            (arr + 4 * i)^ = random(min, max),
+            i = i + 1
+        end,
+        arr
+    end
+
+var seed = 0
+fun rand() =
+    seed = seed * 1664525 + 1013904223,
+    seed
+
+# Generates random number on interval [a, b]
+fun random(a, b) =
+    let
+        var num = 0
+    in
+        num = rand(),
+        if num < 0 then
+            num = -num
+        end,
+        a + num % (b - a + 1)
+    end
+
+fun new(size)
+fun putint(int)
+fun putstr(straddr)

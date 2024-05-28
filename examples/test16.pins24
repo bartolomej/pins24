@@ -1,0 +1,38 @@
+# Test 16 - Nested while statements
+
+var max = 5
+
+fun main() =
+    let
+        var i = 0
+        var j = 0
+        var k = 0
+    in
+        while i < max do
+            j = 0,
+            while j < max do
+                k = 0,
+                while k < max do
+                    print(i, j, k),
+                    k = k + 1
+                end,
+                j = j + 1
+            end,
+            i = i + 1
+        end
+    end,
+    0
+
+fun print(i, j, k) =
+    putint(i),
+    putstr(" + \00"),
+    putint(j),
+    putstr(" + \00"),
+    putint(k),
+    putstr(" = \00"),
+    putint(i + j + k),
+    putstr("\n\00"),
+    0
+
+fun putint(int)
+fun putstr(straddr)

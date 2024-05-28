@@ -136,6 +136,9 @@ public class CodeGen {
 		/** Stevec anonimnih label. */
 		private int labelCounter = 0;
 
+		public final Map<String, AST.FunDef> funDefClashingNames;
+		public final Map<AST.FunDef, String> funDefNameOverrides;
+
 		/**
 		 * Ustvari nov generator kode v abstraktnem sintaksnem drevesu.
 		 *
@@ -144,7 +147,9 @@ public class CodeGen {
 		 */
 		public CodeGenerator(final AttrAST attrAST) {
 			this.attrAST = attrAST;
-		}
+            funDefClashingNames = new HashMap<>();
+            funDefNameOverrides = new HashMap<>();
+        }
 
 		/**
 		 * Sprozi generiranje kode v abstraktnem sintaksnem drevesu.
@@ -171,11 +176,10 @@ public class CodeGen {
 				Mem.Frame frame = attrAST.attrFrame.get(funDef);
 				Report.Locatable loc = attrAST.attrLoc.get(funDef);
 
-				if (parentFrame == null) {
-					// TODO: This is a global function, do we need to do anything extra?
-				}
+				updateFunDefNameOverrides(funDef);
+				String labelName = funDefNameOverrides.get(funDef);
 
-				instrs.add(new PDM.LABEL(funDef.name, loc));
+				instrs.add(new PDM.LABEL(labelName, loc));
 
 				// Size of FP + RA
 				int omittedPointerSizes = 8;
@@ -202,6 +206,17 @@ public class CodeGen {
 				// as that may duplicate function definition instructions in case of nested functions.
 				// See `CodeSegmentGenerator.Generator.visit(AST.FunDef)`.
 				return new ArrayList<>();
+			}
+
+			private void updateFunDefNameOverrides(AST.FunDef funDef) {
+				String nameOverride = funDef.name;
+				int count = 1;
+				while (funDefClashingNames.containsKey(nameOverride)) {
+					nameOverride = funDef.name + count;
+					count++;
+				}
+				funDefNameOverrides.put(funDef, nameOverride);
+				funDefClashingNames.put(nameOverride, funDef);
 			}
 
 			@Override
@@ -255,7 +270,8 @@ public class CodeGen {
 					throw new Report.InternalError("Unreachable");
 				}
 
-				instrs.add(new PDM.NAME(callExpr.name, loc));
+				String labelName = funDefNameOverrides.getOrDefault(def, def.name);
+				instrs.add(new PDM.NAME(labelName, loc));
 				instrs.add(new PDM.CALL(frame, loc));
 
 				attrAST.attrCode.put(callExpr, instrs);

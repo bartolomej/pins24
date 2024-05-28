@@ -1,0 +1,11 @@
+# Test 12 - If-else statement
+
+var x = 0
+
+fun main() =
+    if x > 0 then
+        x = 7
+    else
+        x = 11
+    end,
+    x # returns 11

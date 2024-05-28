@@ -1,0 +1,15 @@
+# Test 07 - Nested functions without parameters and variables
+
+fun main() = f1()
+
+fun f1() =
+    let
+        fun f2() =
+            let
+                fun f3() = 3
+            in
+                f3()
+            end
+    in
+        f2() # Returns 3
+    end

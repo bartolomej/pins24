@@ -1,0 +1,9 @@
+# Test 10 - If statement
+
+var x = 2
+
+fun main() =
+    if x > 0 then
+        x = 7
+    end,
+    x # returns 7

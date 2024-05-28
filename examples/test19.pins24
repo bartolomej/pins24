@@ -1,0 +1,182 @@
+# Test 19 - LU decomposition (doesn't work well because of integer division)
+
+fun main() =
+    let
+        var A = 0
+        var L = 0
+        var U = 0
+    in
+        # [ 1, 1,  1 ]
+        # [ 4, 3, -1 ]
+        # [ 3, 5,  3 ]
+        A = matrixCreate(1, 1, 1, 4, 3, -1, 3, 5, 3),
+        L = matrixCreate(0, 0, 0, 0, 0, 0, 0, 0, 0),
+        U = matrixCreate(0, 0, 0, 0, 0, 0, 0, 0, 0),
+        LU(A, L, U, 3),
+
+        # [ 1,  0, 0 ]
+        # [ 4,  1, 0 ]
+        # [ 3, -2, 1 ]
+        putstr("matrix L:\n\00"),
+        matrixPrint(L, 3),
+
+        # [ 1,  1,   1 ]
+        # [ 0, -1,  -5 ]
+        # [ 0,  0, -10 ]
+        putstr("matrix U:\n\00"),
+        matrixPrint(U, 3)
+    end
+
+# Fills matrices L and U
+fun LU(A, L, U, n) =
+    let
+        var i = 0
+        var j = 0
+        var k = 0
+        var sum = 0
+    in
+        while i < n do
+            # U
+            k = i,
+            while k < n do
+                sum = 0,
+                j = 0,
+                while j < i do
+                    sum = sum + ((L + 4 * i)^ + 4 * j)^ * ((U + 4 * j)^ + 4 * k)^,
+                    j = j + 1
+                end,
+                ((U + 4 * i)^ + 4 * k)^ = ((A + 4 * i)^ + 4 * k)^ - sum,
+                k = k + 1
+            end,
+
+            # L
+            k = i,
+            while k < n do
+                if i == k then
+                    ((L + 4 * i)^ + 4 * i)^ = 1
+                else
+                    sum = 0,
+                    j = 0,
+                    while j < i do
+                        sum = sum + ((L + 4 * k)^ + 4 * j)^ * ((U + 4 * j)^ + 4 * i)^,
+                        j = j + 1
+                    end,
+                    ((L + 4 * k)^ + 4 * i)^ = (((A + 4 * k)^ + 4 * i)^ - sum) / ((U + 4 * i)^ + 4 * i)^
+                end,
+                k = k + 1
+            end,
+            i = i + 1
+        end
+    end,
+    0
+
+# Creates new 3x3 matrix:
+# [ a11, a12, a13 ]
+# [ a21, a22, a23 ]
+# [ a31, a32, a33 ]
+fun matrixCreate(a11, a12, a13, a21, a22, a23, a31, a32, a33) =
+    let
+        var n = 3
+        var M = 0
+        var i = 0
+    in
+        M = new(n * 4),
+        while i < n do
+            (M + 4 * i)^ = new(n * 4),
+            i = i + 1
+        end,
+        M^^ = a11,              # M[0][0]
+        (M^ + 4)^ = a12,        # M[0][1]
+        (M^ + 8)^ = a13,        # M[0][2]
+        (M + 4)^^ = a21,        # M[1][0]
+        ((M + 4)^ + 4)^ = a22,  # M[1][1]
+        ((M + 4)^ + 8)^ = a23,  # M[1][2]
+        (M + 8)^^ = a31,        # M[2][0]
+        ((M + 8)^ + 4)^ = a32,  # M[2][1]
+        ((M + 8)^ + 8)^ = a33,  # M[2][2]
+        M
+    end
+
+# Returns number of digits including negative sign
+fun digits(n) =
+    let
+        var digits = 0
+    in
+        if n == 0 then
+            digits = 1
+        else
+            if n < 0 then
+                digits = digits + 1,
+                while n < 0 do
+                    n = n / 10,
+                    digits = digits + 1
+                end
+            else
+                while n > 0 do
+                    n = n / 10,
+                    digits = digits + 1
+                end
+            end
+        end,
+        digits
+    end
+
+# Prints indent
+fun indentPrint(indent) =
+    let
+        var i = 0
+    in
+        while i < indent do
+            putstr(" \00"),
+            i = i + 1
+        end,
+        0
+    end
+
+# Prints square matrix n x n and formats it
+fun matrixPrint(M, n) =
+    let
+        var r = 0
+        var i = 0
+        var j = 0
+        var maxDigits = 0
+        var d = 0
+    in
+        maxDigits = new(n * 4),
+        j = 0,
+        while j < n do
+            i = 0,
+            (maxDigits + 4 * j)^ = 0,
+            while i < n do
+                d = digits(((M + 4 * i)^ + 4 * j)^),
+                if d > (maxDigits + 4 * j)^ then
+                    (maxDigits + 4 * j)^ = d
+                end,
+                i = i + 1
+            end,
+            #putint((maxDigits + 4 * j)^),
+            #putstr("\n\00"),
+            j = j + 1
+        end,
+
+        i = 0,
+        while i < n do
+            j = 0,
+            putstr("[ \00"),
+            while j < n do
+                indentPrint((maxDigits + 4 * j)^ - digits(((M + 4 * i)^ + 4 * j)^)),
+                putint(((M + 4 * i)^ + 4 * j)^),
+                if j < n - 1 then
+                    putstr(", \00")
+                end,
+                j = j + 1
+            end,
+            putstr(" ]\n\00"),
+            i = i + 1
+        end,
+        0
+    end
+
+fun putint(int)
+fun putstr(straddr)
+fun new(size)
