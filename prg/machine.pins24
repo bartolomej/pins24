@@ -4,19 +4,10 @@
 # TODO: Should this work as well `(hello + 2)^ = 65`?
 # TODO: Support passing string literals to functions `strcpy(^hello, "Hello\n\00")`
 fun main() =
-    let
-        var hello = "Hello\n\00"
-        fun print_hello() = putstr(^hello)
-        fun print_hello_2() =
-            let
-                fun print_hello_2_1() = putstr(^hello)
-            in
-                print_hello_2_1()
-            end
-    in
-        print_hello(),
-        print_hello_2()
-    end
+    print_hello()
+
+var hello = "Hello\n\00"
+fun print_hello() = putstr(^hello)
 
 # Copies the string at src_ptr to dst_ptr address
 # Expects len(dst_ptr) >= len(src_ptr)

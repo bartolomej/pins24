@@ -239,8 +239,11 @@ public class CodeGen {
 					int depthDiff = frame.depth - callingFunFrame.depth;
 
 					instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
-					// TODO: Handle `depthDiff=0` (afaik we need to add LOAD command)
-					for (int i = 0; i < depthDiff; i++) {
+					// Calling function is at the same depth as the current function
+					if (depthDiff == 0) {
+						instrs.add(new PDM.LOAD(loc));
+					}
+					else for (int i = 0; i < depthDiff; i++) {
 						// Get the FP of the caller
 						instrs.add(new PDM.PUSH(-4, loc));
 						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
