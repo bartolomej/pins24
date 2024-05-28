@@ -266,14 +266,25 @@ public class CodeGen {
 			@Override
 			public List<PDM.CodeInstr> visit(AST.AtomExpr atomExpr, Mem.Frame frame) {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
+				List<PDM.DataInstr> dataInstrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(atomExpr);
 
 				Vector<Integer> values = Memory.decodeConst(atomExpr, attrAST);
-				for (Integer value : values) {
-					instrs.add(new PDM.PUSH(value, loc));
+				if (atomExpr.type == AST.AtomExpr.Type.STRCONST) {
+					String strConstDataLabel = ":" + labelCounter;
+					labelCounter++;
+					instrs.add(new PDM.NAME(strConstDataLabel, loc));
+					dataInstrs.add(new PDM.LABEL(strConstDataLabel, loc));
+					for (Integer value : values) {
+						dataInstrs.add(new PDM.DATA(value, loc));
+					}
+				} else {
+					// There will only ever be 1 value
+					instrs.add(new PDM.PUSH(values.getFirst(), loc));
 				}
 
 				attrAST.attrCode.put(atomExpr, instrs);
+				attrAST.attrData.put(atomExpr, dataInstrs);
 
 				return instrs;
 			}

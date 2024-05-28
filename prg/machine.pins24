@@ -2,29 +2,8 @@
 # TODO: Fix pointer arithmetic / assignments
 # TODO: Double check string serialization (maybe allow \0 instead of just \00)
 # TODO: Should this work as well `(hello + 2)^ = 65`?
-# TODO: Support passing string literals to functions `strcpy(^hello, "Hello\n\00")`
 fun main() =
-    print_hello()
-
-var hello = "Hello\n\00"
-fun print_hello() = putstr(^hello)
-
-# Copies the string at src_ptr to dst_ptr address
-# Expects len(dst_ptr) >= len(src_ptr)
-# TODO: Handle error cases
-fun strcpy(dst_ptr, src_ptr) =
-    let
-        var offset = 0
-    in
-        while ((src_ptr + offset)^ != 0)
-        do
-            (dst_ptr + offset)^ = (src_ptr + offset)^,
-            offset = offset + 4
-        end,
-        # Null terminate the destination string
-        (dst_ptr + offset)^ = '\00'
-    end,
-    0
+    putstr("Hello World\n\00")
 
 fun exit(exitcode)
 fun getint()
