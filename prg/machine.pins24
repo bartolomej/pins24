@@ -7,8 +7,15 @@ fun main() =
     let
         var hello = "Hello\n\00"
         fun print_hello() = putstr(^hello)
+        fun print_hello_2() =
+            let
+                fun print_hello_2_1() = putstr(^hello)
+            in
+                print_hello_2_1()
+            end
     in
-        print_hello()
+        print_hello(),
+        print_hello_2()
     end
 
 # Copies the string at src_ptr to dst_ptr address

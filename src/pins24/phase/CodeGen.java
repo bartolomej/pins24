@@ -371,8 +371,20 @@ public class CodeGen {
 
 				switch (access) {
 					case final Mem.RelAccess relAccess: {
+
+						if (relAccess.depth < frame.depth) {
+							int depthDiff = frame.depth - relAccess.depth;
+							instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
+							for (int i = 0; i < depthDiff; i++) {
+								// Get the SL (FP of the outer function)
+								instrs.add(new PDM.LOAD(loc));
+							}
+						} else {
+							// Variable is in the current scope, use current function FP.
+							instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
+						}
+
 						instrs.add(new PDM.PUSH(relAccess.offset, loc));
-						instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
 						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
 						break;
 					}
