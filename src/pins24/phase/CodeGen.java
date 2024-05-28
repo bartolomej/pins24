@@ -222,6 +222,11 @@ public class CodeGen {
 			public List<PDM.CodeInstr> visit(AST.CallExpr callExpr, Mem.Frame frame) {
 				List<PDM.CodeInstr> instrs = new ArrayList<>();
 				Report.Locatable loc = attrAST.attrLoc.get(callExpr);
+				AST.Def def = attrAST.attrDef.get(callExpr);
+				if (!(def instanceof AST.FunDef)) {
+					throw new Report.InternalError("Unreachable");
+				}
+				Mem.Frame callingFunFrame = attrAST.attrFrame.get(def);
 
 				// According to semantic rules,
 				// function arguments are evaluated from right to left.
@@ -229,10 +234,23 @@ public class CodeGen {
 					instrs.addAll(callExpr.args.get(i).accept(this, frame));
 				}
 
-				// TODO: Fix static linking
-				// Push static link
-				instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
-				instrs.add(new PDM.LOAD(loc));
+				// Calling function is declared in the same or outer scopes of the caller function
+				if (callingFunFrame.depth - 1 <= frame.depth) {
+					int depthDiff = frame.depth - callingFunFrame.depth;
+
+					instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
+					// TODO: Handle `depthDiff=0` (afaik we need to add LOAD command)
+					for (int i = 0; i < depthDiff; i++) {
+						// Get the FP of the caller
+						instrs.add(new PDM.PUSH(-4, loc));
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+						instrs.add(new PDM.LOAD(loc));
+					}
+				}
+				// Calling function is declared in inner scopes of the caller function - not visible.
+				else {
+					throw new Report.InternalError("Unreachable");
+				}
 
 				instrs.add(new PDM.NAME(callExpr.name, loc));
 				instrs.add(new PDM.CALL(frame, loc));
