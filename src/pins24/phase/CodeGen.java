@@ -198,7 +198,10 @@ public class CodeGen {
 
 				attrAST.attrCode.put(funDef, instrs);
 
-				return instrs;
+				// Don't return this function's code instructions to parent,
+				// as that may duplicate function definition instructions in case of nested functions.
+				// See `CodeSegmentGenerator.Generator.visit(AST.FunDef)`.
+				return new ArrayList<>();
 			}
 
 			@Override
@@ -226,6 +229,7 @@ public class CodeGen {
 					instrs.addAll(callExpr.args.get(i).accept(this, frame));
 				}
 
+				// TODO: Fix static linking
 				// Push static link
 				instrs.add(new PDM.REGN(PDM.REGN.Reg.FP, loc));
 				instrs.add(new PDM.LOAD(loc));

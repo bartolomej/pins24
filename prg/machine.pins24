@@ -1,6 +1,7 @@
-# TODO: Handle nested functions
+# TODO: Handle nested functions (use static link for outer scope variable access?)
 # TODO: Handle leftover binary expressions
 # TODO: Fix pointer arithmetic / assignments
+# TODO: Double check string serialization (maybe allow \0 instead of just \00)
 fun main() =
 
     # Should this work as well?
@@ -9,14 +10,17 @@ fun main() =
     # TODO: This doesn't work yet
     # strcpy(^hello, "Hello\n\00"),
 
-    putstr(^hello),
-    strcpy(^hello, ^bye),
-    putstr(^hello)
+    let
+        fun print_newline() = putstr(^newline)
+    in
+        putstr(^hello),
+        print_newline(),
+        putstr(^hello)
+    end
 
 
-var hello = "Hello\n\00"
-var bye = "Bye\n\00"
 var newline = "\n\00"
+var hello = "Hello\n\00"
 
 # Copies the string at src_ptr to dst_ptr address
 # Expects len(dst_ptr) >= len(src_ptr)
