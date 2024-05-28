@@ -1,14 +1,1 @@
-# Test 13 - While statement
-
-var x = 20
-
-fun main() =
-    while x > 0 do
-        putint(x),
-        putstr("\n\00"),
-        x = x - 1
-    end,
-    0
-
-fun putint(int)
-fun putstr(straddr)
+fun main() = 1 - 3

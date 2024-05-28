@@ -531,11 +531,57 @@ public class CodeGen {
 					case ADD -> instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
 					case MUL -> instrs.add(new PDM.OPER(PDM.OPER.Oper.MUL, loc));
 					case NEQ -> instrs.add(new PDM.OPER(PDM.OPER.Oper.NEQ, loc));
-					// TODO: Implement these operations
-					case DIV -> {}
-					case SUB -> {}
-					case MOD -> {}
+					case DIV -> {
+						instrs.addAll(instructionsToSwitchBinaryOperandOrder(loc));
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.DIV, loc));
+					}
+					case SUB -> {
+						instrs.addAll(instructionsToSwitchBinaryOperandOrder(loc));
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.SUB, loc));
+					}
+					case MOD -> {
+						instrs.addAll(instructionsToSwitchBinaryOperandOrder(loc));
+						instrs.add(new PDM.OPER(PDM.OPER.Oper.MOD, loc));
+					}
 				}
+
+				return instrs;
+			}
+
+			private List<PDM.CodeInstr> instructionsToSwitchBinaryOperandOrder(Report.Locatable loc) {
+				List<PDM.CodeInstr> instrs = new ArrayList<>();
+
+				// A B A_address
+				instrs.add(new PDM.REGN(PDM.REGN.Reg.SP, loc));
+				instrs.add(new PDM.PUSH(4, loc));
+				instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+
+				// A B A
+				instrs.add(new PDM.LOAD(loc));
+
+				// A B A B_address
+				instrs.add(new PDM.REGN(PDM.REGN.Reg.SP, loc));
+				instrs.add(new PDM.PUSH(4, loc));
+				instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+
+				// A B A B
+				instrs.add(new PDM.LOAD(loc));
+
+				// A B A B A1_address
+				instrs.add(new PDM.REGN(PDM.REGN.Reg.SP, loc));
+				instrs.add(new PDM.PUSH(12, loc));
+				instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+
+				// B B A
+				instrs.add(new PDM.SAVE(loc));
+
+				// B B A B2_address
+				instrs.add(new PDM.REGN(PDM.REGN.Reg.SP, loc));
+				instrs.add(new PDM.PUSH(4, loc));
+				instrs.add(new PDM.OPER(PDM.OPER.Oper.ADD, loc));
+
+				// B A
+				instrs.add(new PDM.SAVE(loc));
 
 				return instrs;
 			}
