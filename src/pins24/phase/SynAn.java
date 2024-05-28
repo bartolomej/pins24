@@ -321,11 +321,10 @@ public class SynAn implements AutoCloseable {
 	private AST.Expr parsePostfixExpression(boolean isOptional) {
 		Report.Locatable startPosition = nextPosition();
 		AST.Expr expr = parseConstOrGroupExpression(isOptional);
-		if (match(Token.Symbol.PTR)) {
-			return saveNodeRangeAndReturn(startPosition, new AST.UnExpr(AST.UnExpr.Oper.VALUEAT, expr));
-		} else {
-			return saveNodeRangeAndReturn(startPosition, expr);
+		while (match(Token.Symbol.PTR)) {
+			expr = saveNodeRangeAndReturn(startPosition, new AST.UnExpr(AST.UnExpr.Oper.VALUEAT, expr));
 		}
+		return expr;
 	}
 
     private AST.Expr parseConstOrGroupExpression(boolean isOptional) {
