@@ -7,7 +7,7 @@ fun main() =
     # Should this work as well?
     # (hello + 2)^ = 65,
 
-    # TODO: This doesn't work yet
+    # TODO: Support passing string literals to functions
     # strcpy(^hello, "Hello\n\00"),
 
     let
