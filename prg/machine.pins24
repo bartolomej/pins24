@@ -1,66 +1,75 @@
+# TODO: Handle leftover binary expressions
+# TODO: Improve/fix pointer arithmetic / assignments
+# TODO: Should this work as well `(hello + 2)^ = 65`?
+
+var input_text_concat_ptr = 0
+var input_text_ptr = 0
+
 fun main() =
-    let
-        var tab = 3, 2, 1, 4, 8, 9, 5, 6, 7
-        var n = 9
-        var st =
-    in
-        putstr("NEUREJENO:\n\00"),
-        while (st < n)
-                do
-                    putint((^tab + 4*st)^),
-                    putstr(" \00"),
-                    st = st + 1
-                end,
+    input_text_concat_ptr = new(100),
+    while (1)
+    do
+        input_text_ptr = new(10),
+        putstr("Enter text: \00"),
+        getstr(input_text_ptr),
+        strcat(input_text_concat_ptr, input_text_ptr),
+        putstr("CONCAT: \00"),
+        putstr(input_text_concat_ptr),
         putstr("\n\00"),
-        selectSort(^tab, n),
-        putstr("SELECTION SORT:\n\00"),
+        putstr("SIZE: \00"),
+        putint(strlen(input_text_concat_ptr)),
+        putstr("\n\n\00")
+    end,
+    putstr(input_text_concat_ptr)
 
-        st = 0,
-        while (st < n)
-        do
-            putint((^tab + 4*st)^),
-            putstr(" \00"),
-            st = st + 1
-
-        end,
-        putstr("\n\00"),
-        0
-    end
-
-fun selectSort(p, n) =
+fun strcat(dst_ptr, src_ptr) =
     let
-        var minP =
-        var i = 0
-        var j = 0
+        var dst_str_size = 0
+        var src_offset = 0
     in
-        while (i < n-1)
+        dst_str_size = strlen(dst_ptr),
+        while ((src_ptr + src_offset)^ != '\00')
         do
-            minP = p + i*4,
-            j = i + 1,
-            while (j < n)
-            do
-                if( (p + 4*j)^  <  minP^ )
-                then
-                    minP = (p + 4*j)
-                end,
-                j = j + 1
-            end,
-
-            swap(minP, (p + i*4)),
-            i = i + 1
+            (dst_ptr + dst_str_size * 4 + src_offset)^ = (src_ptr + src_offset)^,
+            src_offset = src_offset + 4
         end,
         0
     end
 
-fun swap(p1, p2) =
+fun strlen(src_ptr) =
     let
-        var tmp =
+        var ptr = 0
+        var len = 0
     in
-        tmp = p1^,
-        p1^ = p2^,
-        p2^ = tmp,
-        0
+        ptr = src_ptr,
+        while (ptr^ != '\00')
+        do
+            len = len + 1,
+            ptr = ptr + 4
+        end,
+        len
     end
 
-fun putint(int)
-fun putstr(addr)
+# Copies the string at src_ptr to dst_ptr address
+# Expects len(dst_ptr) >= len(src_ptr)
+fun strcpy(dst_ptr, src_ptr) =
+    let
+        var offset = 0
+    in
+        while ((src_ptr + offset)^ != 0)
+        do
+            (dst_ptr + offset)^ = (src_ptr + offset)^,
+            offset = offset + 4
+        end,
+        # Null terminate the destination string
+        (dst_ptr + offset)^ = '\00'
+    end,
+    0
+
+fun exit(exitcode)
+fun getint()
+fun putint(value)
+fun getstr(straddr)
+fun putstr(straddr)
+fun new(size)
+fun del(straddr)
