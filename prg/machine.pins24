@@ -7,20 +7,32 @@ var input_text_ptr = 0
 
 fun main() =
     let
-        var str_ptr = 0
+        var x = 0
+        var y = 0
+        var max_x = 10
+        var out_str_ptr = 0
     in
-        str_ptr = new(100),
-        append(str_ptr, "Hello\00"),
-        append(str_ptr, " World\n\00"),
-        putstr(str_ptr)
+        out_str_ptr = new(100),
+        while (x < max_x)
+        do
+            y = compute_y(x),
+            repeat(out_str_ptr, '*', y),
+            append(out_str_ptr, "\n\00"),
+            putstr(out_str_ptr),
+            x = x + 1
+        end,
+        0
     end
+
+
+fun compute_y(x) = x * x
 
 fun append(dst_ptr, src_str) = strcat(dst_ptr + strlen(dst_ptr) * 4, src_str)
 
 fun repeat(dst_ptr, char, count) =
     while (count > 0)
     do
-        dst_ptr = char,
+        dst_ptr^ = char,
         dst_ptr = dst_ptr + 4,
         count = count - 1
     end,
