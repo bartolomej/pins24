@@ -193,7 +193,6 @@ public class CodeGen {
 				instrs.add(new PDM.POPN(loc));
 
 
-				// TODO: Do we need to do the same for params?
 				instrs.addAll(funDef.stmts.accept(this, frame));
 
 				// Note tat `parsSize` includes the size of SL

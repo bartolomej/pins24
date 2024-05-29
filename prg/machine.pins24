@@ -1,7 +1,3 @@
-# TODO: Improve/fix pointer arithmetic / assignments
-# TODO: Should this work as well `(hello + 2)^ = 65`?
-# TOOD: Double check string assignments (e.g. str_ptr^ = "My string\00")
-
 var input_text_concat_ptr = 0
 var input_text_ptr = 0
 
