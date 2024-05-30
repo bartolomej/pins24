@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Requires OpenJDK v22
+javac -d out/production src/module-info.java src/pins24/**/*.java 2> /dev/null # Emit compile warnings
+java --module-path out --module pins24/pins24.cli.Pins24 $1

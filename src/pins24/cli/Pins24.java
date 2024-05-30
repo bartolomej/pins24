@@ -1,4 +1,4 @@
-package pins24;
+package pins24.cli;
 
 import pins24.common.PDM;
 import pins24.common.Report;
