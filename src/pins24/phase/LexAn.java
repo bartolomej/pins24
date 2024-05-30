@@ -16,8 +16,6 @@ public class LexAn implements AutoCloseable {
 
 	/**
 	 * Ustvari nov leksikalni analizator.
-	 *
-	 * @param srcFileName Ime izvorne datoteke.
 	 */
 	public LexAn(final String srcFileName) {
 		try {
@@ -26,6 +24,11 @@ public class LexAn implements AutoCloseable {
 		} catch (FileNotFoundException __) {
 			throw new Report.Error("Source file '" + srcFileName + "' not found.");
 		}
+	}
+
+	public LexAn(final Reader reader) {
+		srcFile = new BufferedReader(reader);
+		nextChar();
 	}
 
 	@Override

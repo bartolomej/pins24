@@ -2,6 +2,7 @@ package pins24.phase;
 
 import pins24.common.*;
 
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -21,6 +22,10 @@ public class SynAn implements AutoCloseable {
 	 */
 	public SynAn(final String srcFileName) {
 		this.lexAn = new LexAn(srcFileName);
+	}
+
+	public SynAn(final Reader reader) {
+		this.lexAn = new LexAn(reader);
 	}
 
 	@Override
