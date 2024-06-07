@@ -1,0 +1,5 @@
+# To je inline komentar
+#{
+    #{ ugnezden komentar }#
+}#
+fun main() = 0
