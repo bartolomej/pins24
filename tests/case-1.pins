@@ -1,0 +1,3 @@
+var a = 5 times 5
+
+fun main() = a
