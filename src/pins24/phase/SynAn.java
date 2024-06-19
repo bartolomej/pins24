@@ -269,7 +269,7 @@ public class SynAn implements AutoCloseable {
 
 	private AST.Expr parseComparisonExpression(boolean isOptional) {
 		Report.Locatable startPosition = nextPosition();
-		AST.Expr left = parseAdditionExpression(isOptional);
+		AST.Expr left = parseSubtractionExpression(isOptional);
         if (match(
 				Token.Symbol.EQU,
 				Token.Symbol.NEQ,
@@ -279,17 +279,17 @@ public class SynAn implements AutoCloseable {
 				Token.Symbol.LEQ
 		)) {
 			Token operator = current;
-            AST.Expr right = parseAdditionExpression(isOptional);
+            AST.Expr right = parseSubtractionExpression(isOptional);
 			return saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), left, right));
         } else {
 			return saveNodeRangeAndReturn(startPosition, left);
 		}
 	}
 
-	private AST.Expr parseAdditionExpression(boolean isOptional) {
+	private AST.Expr parseSubtractionExpression(boolean isOptional) {
 		Report.Locatable startPosition = nextPosition();
 		AST.Expr expr = saveNodeRangeAndReturn(startPosition, parseMultiplicationExpression(isOptional));
-		while (match(Token.Symbol.ADD, Token.Symbol.SUB)) {
+		while (match(Token.Symbol.SUB)) {
 			Token operator = current;
 			AST.Expr right = parseMultiplicationExpression(isOptional);
 			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
@@ -299,8 +299,19 @@ public class SynAn implements AutoCloseable {
 
 	private AST.Expr parseMultiplicationExpression(boolean isOptional) {
 		Report.Locatable startPosition = nextPosition();
-		AST.Expr expr = parsePrefixExpression(isOptional);
+		AST.Expr expr = parseAdditionExpression(isOptional);
 		while (match(Token.Symbol.MUL, Token.Symbol.DIV, Token.Symbol.MOD)) {
+			Token operator = current;
+			AST.Expr right = parseAdditionExpression(isOptional);
+			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
+		}
+		return saveNodeRangeAndReturn(startPosition, expr);
+	}
+
+	private AST.Expr parseAdditionExpression(boolean isOptional) {
+		Report.Locatable startPosition = nextPosition();
+		AST.Expr expr = saveNodeRangeAndReturn(startPosition, parsePrefixExpression(isOptional));
+		while (match(Token.Symbol.ADD)) {
 			Token operator = current;
 			AST.Expr right = parsePrefixExpression(isOptional);
 			expr = saveNodeRangeAndReturn(startPosition, new AST.BinExpr(tokenToBinExprOperator(operator), expr, right));
