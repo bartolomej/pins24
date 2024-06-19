@@ -123,7 +123,7 @@ public class LexAn implements AutoCloseable {
 				case ' ':
 				case '\t':
 				case '\r':
-					skipToken();
+					skipChar();
 					break;
 				case '"':
 					nextChar();
@@ -135,8 +135,9 @@ public class LexAn implements AutoCloseable {
 					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString());
 					break;
 				case '\'':
+					skipChar();
 					String charLexeme = readCharLexeme('\'');
-					nextChar();
+					skipChar();
 					if (currentChar() != '\'') {
 						throw unexpectedTokenError();
 					}
@@ -243,7 +244,7 @@ public class LexAn implements AutoCloseable {
 
 	private void skipLineComment() {
 		while (currentChar() != '\n' && currentChar() != EOF) {
-			skipToken();
+			skipChar();
 		}
 	}
 
@@ -287,6 +288,9 @@ public class LexAn implements AutoCloseable {
             lexeme.append((char) currentChar());
             nextChar();
         }
+		// We stepped forward one character extra above
+		stepBack();
+
 		this.makeToken(Token.Symbol.INTCONST, lexeme.toString());
 	}
 
@@ -359,7 +363,7 @@ public class LexAn implements AutoCloseable {
 		this.makeToken(symbol, (char) currentChar() + "");
 	}
 
-	private void skipToken() {
+	private void skipChar() {
 		// Steps forward and prepares the positions for the next token,
 		// without creating a token like `makeToken`
 		this.startPosition = getEndPosition();
