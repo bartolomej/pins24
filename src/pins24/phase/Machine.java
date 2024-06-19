@@ -606,7 +606,11 @@ public class Machine {
 
 				// ustvari nov stroj in izvede program:
 				new Executor(codeSegment, dataSegment);
-			}
+			} catch (Report.Error error) {
+                // Izpis opisa napake.
+                System.err.println(error.getMessage());
+                System.exit(1);
+            }
 
 			// Upajmo, da kdaj pridemo to te tocke.
 			// A zavedajmo se sledecega:

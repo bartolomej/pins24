@@ -98,7 +98,7 @@ public class SynAn implements AutoCloseable {
 		this.attrLoc = attrLoc;
 		final AST.Nodes<AST.MainDef> definitions = parseProgram();
 		if (lexAn.peekToken().symbol() != Token.Symbol.EOF)
-			Report.warning(lexAn.peekToken(),
+			throw new Report.Error(lexAn.peekToken(),
 					"Unexpected text '" + lexAn.peekToken().lexeme() + "...' at the end of the program.");
 		return definitions;
 	}
