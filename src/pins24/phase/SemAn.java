@@ -135,7 +135,8 @@ public class SemAn {
 		 *         ({@link AttrAST#attrDef} izracunan in nespremenljiv).
 		 */
 		public AttrAST resolve() {
-			attrAST.ast.accept(new ResolverVisitor(), null);
+			attrAST.ast.accept(new ResolverVisitor(), ResolverVisitor.Pass.Defs);
+			attrAST.ast.accept(new ResolverVisitor(), ResolverVisitor.Pass.Rest);
 			return new AttrAST(attrAST, Collections.unmodifiableMap(attrAST.attrDef), attrAST.attrLVal);
 		}
 
@@ -205,16 +206,25 @@ public class SemAn {
 			 */
 			public boolean ins(final AST.Def def) {
 				final LinkedList<ScopedDef> defsOfOldName = namesToDefs.get(def.name);
+
+				ScopedDef scopedDef;
+				if (def instanceof AST.VarDef && ((AST.VarDef) def).isStatic) {
+					scopedDef = new ScopedDef(0, def);
+				} else {
+					scopedDef = new ScopedDef(depth, def);
+				}
+
+
 				if (defsOfOldName == null) {
 					final LinkedList<ScopedDef> defsOfNewName = new LinkedList<ScopedDef>();
-					defsOfNewName.addFirst(new ScopedDef(depth, def));
+					defsOfNewName.addFirst(scopedDef);
 					namesToDefs.put(def.name, defsOfNewName);
 					namesToDefsByDepth.getFirst().add(def.name);
 					return true;
 				} else {
 					if (defsOfOldName.getFirst().depth == depth)
 						return false;
-					defsOfOldName.addFirst(new ScopedDef(depth, def));
+					defsOfOldName.addFirst(scopedDef);
 					namesToDefsByDepth.getFirst().add(def.name);
 					return true;
 				}
@@ -263,25 +273,13 @@ public class SemAn {
 				for (final AST.Node node : nodes) {
 					switch (node) {
 					case final AST.FunDef funDef:
-						funDef.accept(this, Pass.Defs);
+						funDef.accept(this, pass);
 						break;
 					case final AST.VarDef varDef:
-						varDef.accept(this, Pass.Defs);
+						varDef.accept(this, pass);
 						break;
 					default:
-						break;
-					}
-				}
-				for (final AST.Node node : nodes) {
-					switch (node) {
-					case final AST.FunDef funDef:
-						funDef.accept(this, Pass.Rest);
-						break;
-					case final AST.VarDef varDef:
-						varDef.accept(this, Pass.Rest);
-						break;
-					default:
-						node.accept(this, null);
+						node.accept(this, pass);
 						break;
 					}
 				}
@@ -290,31 +288,36 @@ public class SemAn {
 
 			@Override
 			public Object visit(final AST.FunDef funDef, final Pass pass) {
+				symbolTable.newScope();
 				switch (pass) {
 				case Defs: {
-					if (!symbolTable.ins(funDef))
+					if (!symbolTable.ins(funDef)) {
 						throw new Report.Error(attrAST.attrLoc.get(funDef),
 								"Illegal definition of function '" + funDef.name + "'.");
+					}
+					funDef.pars.accept(this, pass);
+					funDef.stmts.accept(this, pass);
 					break;
 				}
 				case Rest: {
-					symbolTable.newScope();
-					funDef.pars.accept(this, null);
-					funDef.stmts.accept(this, null);
-					symbolTable.oldScope();
+					funDef.pars.accept(this, pass);
+					funDef.stmts.accept(this, pass);
 					break;
 				}
 				default:
 					throw new Report.InternalError();
 				}
+				symbolTable.oldScope();
 				return null;
 			}
 
 			@Override
 			public Object visit(final AST.ParDef parDef, final Pass pass) {
-				if (!symbolTable.ins(parDef))
-					throw new Report.Error(attrAST.attrLoc.get(parDef),
-							"Illegal definition of parameter '" + parDef.name + "'.");
+				if (pass == Pass.Defs) {
+					if (!symbolTable.ins(parDef))
+						throw new Report.Error(attrAST.attrLoc.get(parDef),
+								"Illegal definition of parameter '" + parDef.name + "'.");
+				}
 				return null;
 			}
 
@@ -325,7 +328,7 @@ public class SemAn {
 					if (!symbolTable.ins(varDef))
 						throw new Report.Error(attrAST.attrLoc.get(varDef),
 								"Illegal definition of variable '" + varDef.name + "'.");
-					varDef.inits.accept(this, null);
+					varDef.inits.accept(this, pass);
 					break;
 				}
 				case Rest: {
@@ -340,28 +343,32 @@ public class SemAn {
 			@Override
 			public Object visit(final AST.LetStmt letStmt, final Pass pass) {
 				symbolTable.newScope();
-				letStmt.defs.accept(this, null);
-				letStmt.stmts.accept(this, null);
+				letStmt.defs.accept(this, pass);
+				letStmt.stmts.accept(this, pass);
 				symbolTable.oldScope();
 				return null;
 			}
 
 			@Override
 			public Object visit(final AST.VarExpr varExpr, final Pass pass) {
-				final AST.Def def = symbolTable.fnd(varExpr.name);
-				if (def == null)
-					throw new Report.Error(attrAST.attrLoc.get(varExpr), "Undefined name '" + varExpr.name + "'.");
-				attrAST.attrDef.put(varExpr, def);
+				if (pass == Pass.Rest) {
+					final AST.Def def = symbolTable.fnd(varExpr.name);
+					if (def == null)
+						throw new Report.Error(attrAST.attrLoc.get(varExpr), "Undefined name '" + varExpr.name + "'.");
+					attrAST.attrDef.put(varExpr, def);
+				}
 				return null;
 			}
 
 			@Override
 			public Object visit(final AST.CallExpr callExpr, final Pass pass) {
-				final AST.Def def = symbolTable.fnd(callExpr.name);
-				if (def == null)
-					throw new Report.Error(attrAST.attrLoc.get(callExpr), "Undefined name '" + callExpr.name + "'.");
-				attrAST.attrDef.put(callExpr, def);
-				callExpr.args.accept(this, null);
+				if (pass == Pass.Rest) {
+					final AST.Def def = symbolTable.fnd(callExpr.name);
+					if (def == null)
+						throw new Report.Error(attrAST.attrLoc.get(callExpr), "Undefined name '" + callExpr.name + "'.");
+					attrAST.attrDef.put(callExpr, def);
+					callExpr.args.accept(this, pass);
+				}
 				return null;
 			}
 
@@ -473,7 +480,7 @@ public class SemAn {
 				default:
 					throw new Report.Error(attrAST.attrLoc.get(callExpr), "'" + callExpr.name + "' is not a function.");
 				}
-				callExpr.args.accept(this, null);
+				callExpr.args.accept(this, pass);
 				return null;
 			}
 
