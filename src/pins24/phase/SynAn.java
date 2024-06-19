@@ -122,7 +122,7 @@ public class SynAn implements AutoCloseable {
 				case FUN -> {
 					definitions.add(parseFunctionDefinition());
 				}
-				case VAR -> {
+				case VAR, STATIC -> {
 					definitions.add(parseVarDefinition());
 				}
 				default -> {
@@ -380,11 +380,14 @@ public class SynAn implements AutoCloseable {
 
 	private AST.VarDef parseVarDefinition() {
 		Report.Locatable startPosition = nextPosition();
+
+		boolean isStatic = match(Token.Symbol.STATIC);
+
 		consume(Token.Symbol.VAR);
 		Token name = consume(Token.Symbol.IDENTIFIER);
 		consume(Token.Symbol.ASSIGN);
 		List<AST.Init> initializers = parseInitializers();
-		return saveNodeRangeAndReturn(startPosition, new AST.VarDef(name.lexeme(), initializers));
+		return saveNodeRangeAndReturn(startPosition, new AST.VarDef(name.lexeme(), initializers, isStatic));
 	}
 
 	private List<AST.Init> parseInitializers() {
