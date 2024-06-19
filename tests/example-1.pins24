@@ -1,8 +1,10 @@
-fun main() = a
-
-fun f() =
+fun main() =
     let
         static var a = 1
     in
-        a
+        putint(^a),
+        putstr("\n")
     end
+
+fun putint(value)
+fun putstr(value)
