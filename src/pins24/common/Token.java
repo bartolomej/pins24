@@ -71,6 +71,8 @@ public record Token(Report.Location location, Symbol symbol, String lexeme) impl
 		SUB,
 		/** Simbol {@code *}. */
 		MUL,
+		/** Simbol {@code times}. */
+		TIMES,
 		/** Simbol {@code /}. */
 		DIV,
 		/** Simbol {@code %}. */

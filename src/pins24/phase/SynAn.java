@@ -409,8 +409,8 @@ public class SynAn implements AutoCloseable {
 		Report.Locatable startPosition = nextPosition();
 		if (check(Token.Symbol.INTCONST)) {
 			Token num = consume(Token.Symbol.INTCONST);
-			if (check(Token.Symbol.MUL)) {
-				consume(Token.Symbol.MUL);
+			if (check(Token.Symbol.TIMES)) {
+				consume(Token.Symbol.TIMES);
 				AST.AtomExpr value = parseConst(false);
 				return saveNodeRangeAndReturn(startPosition, new AST.Init(
 						saveNodeRangeAndReturn(startPosition, new AST.AtomExpr(AST.AtomExpr.Type.INTCONST, num.lexeme())),

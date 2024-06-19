@@ -363,6 +363,7 @@ public class LexAn implements AutoCloseable {
 			case "let" -> Token.Symbol.LET;
 			case "in" -> Token.Symbol.IN;
 			case "end" -> Token.Symbol.END;
+			case "times" -> Token.Symbol.TIMES;
 			default -> Token.Symbol.IDENTIFIER;
 		};
         this.makeToken(symbol, lexeme.toString(), true);
