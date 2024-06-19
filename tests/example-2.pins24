@@ -1,0 +1,6 @@
+fun main() =
+    let
+        var a = 2
+    in
+        a
+    end
