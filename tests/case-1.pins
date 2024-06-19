@@ -1,0 +1,10 @@
+# To je inline komentar
+#{
+    ugnezden komentar 1
+    #{
+        ugnezden komentar 2
+        #{ ugnezden komentar 3 }#
+    }#
+}#
+# To je drugi inline komentar
+fun main() = 0

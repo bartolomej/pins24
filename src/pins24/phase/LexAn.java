@@ -290,10 +290,36 @@ public class LexAn implements AutoCloseable {
 
 	private void trySwallowingComment() {
 		if (buffChar == '#') {
+			nextChar();
+
+			if (buffChar == '{') {
+				nextChar();
+				swallowMultiLineComment();
+			}
+
 			while (buffChar != '\n' && buffChar != -1) {
 				nextChar();
 			}
             resetStartLocation();
+		}
+	}
+
+	private void swallowMultiLineComment() {
+		while (true) {
+			nextChar();
+			if (buffChar == '#') {
+				nextChar();
+				if (buffChar == '{') {
+					nextChar();
+					swallowMultiLineComment();
+				}
+			}
+			if (buffChar == '}') {
+				nextChar();
+				if (buffChar == '#') {
+					return;
+				}
+			}
 		}
 	}
 
