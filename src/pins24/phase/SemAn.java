@@ -31,6 +31,9 @@ public class SemAn {
 		/** Atribut: ali je dani izraz levi izraz. */
 		public final Map<AST.Expr, Boolean> attrLVal;
 
+		/** Atribut: ali funkcija vrne vrednost. */
+		public final Map<AST.FunDef, Boolean> attrHasReturn;
+
 		/**
 		 * Ustvari novo abstraktno sintaksno drevo z dodanim atributi semanticne
 		 * analize.
@@ -40,11 +43,16 @@ public class SemAn {
 		 * @param attrDef  Atribut: definicija uporabljenega imena.
 		 * @param attrLVal Atribut: ali je dani izraz levi izraz.
 		 */
-		public AttrAST(final Abstr.AttrAST attrAST, final Map<AST.NameExpr, AST.Def> attrDef,
-				final Map<AST.Expr, Boolean> attrLVal) {
+		public AttrAST(
+				final Abstr.AttrAST attrAST,
+				final Map<AST.NameExpr, AST.Def> attrDef,
+				final Map<AST.Expr, Boolean> attrLVal,
+				final Map<AST.FunDef, Boolean> attrHasReturn
+		) {
 			super(attrAST);
 			this.attrDef = attrDef;
 			this.attrLVal = attrLVal;
+			this.attrHasReturn = attrHasReturn;
 		}
 
 		/**
@@ -58,6 +66,7 @@ public class SemAn {
 			super(attrAST);
 			this.attrDef = attrAST.attrDef;
 			this.attrLVal = attrAST.attrLVal;
+			this.attrHasReturn = attrAST.attrHasReturn;
 		}
 
 		@Override
@@ -102,8 +111,12 @@ public class SemAn {
 	 * @return Abstraktno sintaksno drevo z dodanimi atributi semanticne analize.
 	 */
 	public static AttrAST analyze(Abstr.AttrAST abstrAttrAST) {
-		AttrAST attrAST = new AttrAST(abstrAttrAST, new HashMap<AST.NameExpr, AST.Def>(),
-				new HashMap<AST.Expr, Boolean>());
+		AttrAST attrAST = new AttrAST(
+				abstrAttrAST,
+				new HashMap<>(),
+				new HashMap<>(),
+				new HashMap<>()
+		);
 		attrAST = new NameResolver(attrAST).resolve();
 		attrAST = new TypeResolver(attrAST).resolve();
 		attrAST = new LValResolver(attrAST).resolve();
@@ -136,7 +149,7 @@ public class SemAn {
 		 */
 		public AttrAST resolve() {
 			attrAST.ast.accept(new ResolverVisitor(), null);
-			return new AttrAST(attrAST, Collections.unmodifiableMap(attrAST.attrDef), attrAST.attrLVal);
+			return new AttrAST(attrAST, Collections.unmodifiableMap(attrAST.attrDef), attrAST.attrLVal, attrAST.attrHasReturn);
 		}
 
 		/** Simbolna tabela, ki se uporablja med razresevanjem imen. */
@@ -394,7 +407,7 @@ public class SemAn {
 		 */
 		public AttrAST resolve() {
 			attrAST.ast.accept(new ResolverVisitor(), null);
-			return new AttrAST(attrAST, attrAST.attrDef, attrAST.attrLVal);
+			return new AttrAST(attrAST, attrAST.attrDef, attrAST.attrLVal, attrAST.attrHasReturn);
 		}
 
 		/**
@@ -434,13 +447,14 @@ public class SemAn {
 						case AST.LetStmt letStmt:
 							if (letStmt.stmts.size() != 0) {
 								lastStmt = letStmt.stmts.getAll().getLast();
-							} else
-								throw new Report.Error(attrAST.attrLoc.get(funDef),
-										"Function '" + funDef.name + "' does not return any value.");
+							} else {
+								attrAST.attrHasReturn.put(funDef, false);
+								return null;
+							}
 							break;
 						default:
-							throw new Report.Error(attrAST.attrLoc.get(funDef),
-									"Function '" + funDef.name + "' does not return any value.");
+							attrAST.attrHasReturn.put(funDef, false);
+							return null;
 						}
 					}
 				}
@@ -507,7 +521,7 @@ public class SemAn {
 		 */
 		public AttrAST resolve() {
 			attrAST.ast.accept(new ResolverVisitor(), null);
-			return new AttrAST(attrAST, attrAST.attrDef, Collections.unmodifiableMap(attrAST.attrLVal));
+			return new AttrAST(attrAST, attrAST.attrDef, Collections.unmodifiableMap(attrAST.attrLVal), attrAST.attrHasReturn);
 		}
 
 		/**

@@ -1,6 +1,8 @@
 package pins24.phase;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,22 +15,30 @@ public class LexAn implements AutoCloseable {
 
 	/** Izvorna datoteka. */
 	private final Reader srcFile;
+	/** Character position within `consumedChars` list. **/
+	private int startOffset;
+	private int endOffset;
+	private final List<Integer> consumedChars;
+	/**
+	 * Start/end positions of the currently consuming token.
+	 */
+	private Report.Location startPosition;
+
+	/** End Of File - no characters left to read  **/
+	private final int EOF = -1;
+	/** Start Of File - no character was read  **/
+	private final int SOF = -2;
 
 	/**
 	 * Ustvari nov leksikalni analizator.
 	 */
-	public LexAn(final String srcFileName) {
-		try {
-			srcFile = new BufferedReader(new InputStreamReader(new FileInputStream(new File(srcFileName))));
-			nextChar(); // Pripravi prvi znak izvorne datoteke (glej {@link nextChar}).
-		} catch (FileNotFoundException __) {
-			throw new Report.Error("Source file '" + srcFileName + "' not found.");
-		}
-	}
-
 	public LexAn(final Reader reader) {
-		srcFile = new BufferedReader(reader);
-		nextChar();
+		this.srcFile = new BufferedReader(reader);
+		this.consumedChars = new ArrayList<>();
+		this.consumedChars.add(SOF);
+		this.startPosition = new Report.Location(1, 1);
+		this.endOffset = 0;
+		this.startOffset = 0;
 	}
 
 	@Override
@@ -39,35 +49,6 @@ public class LexAn implements AutoCloseable {
 			throw new Report.Error("Cannot close source file.");
 		}
 	}
-
-	/** Trenutni znak izvorne datoteke (glej {@code nextChar}). */
-	private int buffChar = -2;
-
-	/** Vrstica trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharLine = 0;
-
-	/** Stolpec trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharColumn = 0;
-
-	/** Vrstica začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharStartLine = 0;
-
-	/** Stolpec začetka trenutnega znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharStartColumn = 0;
-
-	/** Prejšnja vrstica začetka znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharPrevStartLine = 0;
-
-	/** Prejšnji stolpec začetka znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharPrevStartColumn = 0;
-
-	/** Prejšnji stolpec znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharPrevColumn = 0;
-
-	/** Prejšnja vrstica znaka izvorne datoteke (glej {@code nextChar}). */
-	private int buffCharPrevLine = 0;
-
-	private boolean shouldResetStartLocation = false;
 
 	/**
 	 * Prebere naslednji znak izvorne datoteke.
@@ -93,47 +74,27 @@ public class LexAn implements AutoCloseable {
 	 * nista ve"c veljavni).
 	 */
 	private void nextChar() {
-		buffCharPrevLine = buffCharLine;
-		buffCharPrevColumn = buffCharColumn;
-		buffCharPrevStartLine = buffCharStartLine;
-		buffCharPrevStartColumn = buffCharStartColumn;
+		if (currentChar() == EOF) {
+			return;
+		}
+		if (endOffset < consumedChars.size() - 1) {
+			endOffset++;
+			return;
+		}
 		try {
-			switch (buffChar) {
-			case -2: // Noben znak "se ni bil prebran.
-				buffChar = srcFile.read();
-				buffCharLine = buffChar == -1 ? 0 : 1;
-				buffCharColumn = buffChar == -1 ? 0 : 1;
-                resetStartLocation();
-				break;
-			case -1: // Konec datoteke je bil "ze viden.
-                buffCharLine = 0;
-                buffCharColumn = 0;
-				break;
-			case '\n': // Prejsnji znak je koncal vrstico, zacne se nova vrstica.
-				buffChar = srcFile.read();
-				buffCharLine = buffChar == -1 ? buffCharLine : buffCharLine + 1;
-				buffCharColumn = buffChar == -1 ? buffCharColumn : 1;
-				break;
-			case '\t': // Prejsnji znak je tabulator, ta znak je morda potisnjen v desno.
-				buffChar = srcFile.read();
-				while (buffCharColumn % 8 != 0)
-					buffCharColumn += 1;
-				buffCharColumn += 1;
-				break;
-			default: // Prejsnji znak je brez posebnosti.
-				buffChar = srcFile.read();
-				buffCharColumn += 1;
-				break;
-			}
-
-            if (shouldResetStartLocation) {
-                buffCharStartLine = buffCharLine;
-                buffCharStartColumn = buffCharColumn;
-                shouldResetStartLocation = false;
-            }
+			this.consumedChars.add(srcFile.read());
+			this.endOffset++;
 		} catch (IOException __) {
 			throw new Report.Error("Cannot read source file.");
 		}
+	}
+
+	private int currentChar() {
+		return this.consumedChars.get(this.endOffset);
+	}
+
+	private void stepBack() {
+		this.endOffset--;
 	}
 
 	/**
@@ -150,208 +111,198 @@ public class LexAn implements AutoCloseable {
 	 * {@code peekToken} in {@code takeToken}.
 	 */
 	private void nextToken() {
+		nextChar();
+
 		buffToken = null;
 		while (buffToken == null) {
-			tryReadNumberToken();
-
-			tryReadKeywordOrIdentifierToken();
-
-			trySwallowingComment();
-
-			// Prevent the code in switch statement to override
-			// any tokens produced by the above code.
-			if (buffToken != null) {
-				break;
-			}
-
-			switch (buffChar) {
+			switch (currentChar()) {
+				case '#':
+					skipLineComment();
+					break;
 				case '\n':
 				case ' ':
 				case '\t':
 				case '\r':
-					nextChar();
-                    resetStartLocation();
+					skipChar();
 					break;
 				case '"':
 					nextChar();
 					StringBuilder stringLexeme = new StringBuilder();
-					while (buffChar != '"') {
-						stringLexeme.append(getSingleCharLexeme('"'));
+					while (currentChar() != '"') {
+						stringLexeme.append(readCharLexeme('"'));
 						nextChar();
 					}
-					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString(), false);
-					nextChar();
+					this.makeToken(Token.Symbol.STRINGCONST, stringLexeme.toString());
 					break;
 				case '\'':
-					nextChar();
-					String charLexeme = getSingleCharLexeme('\'');
-					nextChar();
-					if ((buffChar) != '\'') {
+					skipChar();
+					String charLexeme = readCharLexeme('\'');
+					skipChar();
+					if (currentChar() != '\'') {
 						throw unexpectedTokenError();
 					}
-					this.makeToken(Token.Symbol.CHARCONST, charLexeme, false);
-					nextChar();
+					this.makeToken(Token.Symbol.CHARCONST, charLexeme);
 					break;
 				case ',':
 					makeToken(Token.Symbol.COMMA);
-					nextChar();
 					break;
 				case '(':
 					makeToken(Token.Symbol.LPAREN);
-					nextChar();
 					break;
 				case ')':
 					makeToken(Token.Symbol.RPAREN);
-					nextChar();
 					break;
 				case '^':
 					makeToken(Token.Symbol.PTR);
-					nextChar();
 					break;
 				case '%':
 					makeToken(Token.Symbol.MOD);
-					nextChar();
 					break;
 				case '/':
 					makeToken(Token.Symbol.DIV);
-					nextChar();
 					break;
 				case '*':
 					makeToken(Token.Symbol.MUL);
-					nextChar();
 					break;
 				case '-':
 					makeToken(Token.Symbol.SUB);
-					nextChar();
 					break;
 				case '+':
 					makeToken(Token.Symbol.ADD);
-					nextChar();
 					break;
 				case '&':
 					nextChar();
 					matchOrThrow("&");
 					makeToken(Token.Symbol.AND);
-					nextChar();
 					break;
 				case '|':
 					nextChar();
 					matchOrThrow("|");
 					makeToken(Token.Symbol.OR);
-					nextChar();
 					break;
 				case '=':
 					nextChar();
-					if (buffChar == '=') {
+					if (currentChar() == '=') {
 						makeToken(Token.Symbol.EQU);
-						nextChar();
 					} else {
-						makeToken(Token.Symbol.ASSIGN, true);
+						stepBack();
+						makeToken(Token.Symbol.ASSIGN);
 					}
 					break;
 				case '!':
 					nextChar();
-					if (buffChar == '=') {
+					if (currentChar() == '=') {
 						makeToken(Token.Symbol.NEQ);
-						nextChar();
 					} else {
-						makeToken(Token.Symbol.NOT, true);
+						stepBack();
+						makeToken(Token.Symbol.NOT);
 					}
 					break;
 				case '>':
 					nextChar();
-					if (buffChar == '=') {
+					if (currentChar() == '=') {
 						makeToken(Token.Symbol.GEQ);
-						nextChar();
 					} else {
-						makeToken(Token.Symbol.GTH, true);
+						stepBack();
+						makeToken(Token.Symbol.GTH);
 					}
 					break;
 				case '<':
 					nextChar();
-					if (buffChar == '=') {
+					if (currentChar() == '=') {
 						makeToken(Token.Symbol.LEQ);
-						nextChar();
 					} else {
-						makeToken(Token.Symbol.LTH, true);
+						stepBack();
+						makeToken(Token.Symbol.LTH);
 					}
 					break;
-				case -1:
-                    buffCharColumn = 0;
-                    buffCharLine = 0;
-                    resetStartLocation();
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					consumeNumber();
+					break;
+				case EOF:
 					makeToken(Token.Symbol.EOF);
 					break;
-				default:
-					throw unexpectedTokenError();
+				default: {
+					if (matchesPattern("[_a-z]", currentChar())) {
+						consumeKeywordOrIdentifier();
+					} else {
+						throw unexpectedTokenError();
+					}
+				}
 			}
 		}
 	}
 
-	private void trySwallowingComment() {
-		if (buffChar == '#') {
-			while (buffChar != '\n' && buffChar != -1) {
-				nextChar();
-			}
-            resetStartLocation();
+	private void skipLineComment() {
+		while (currentChar() != '\n' && currentChar() != EOF) {
+			skipChar();
 		}
 	}
 
-	private String getSingleCharLexeme(char caretLexeme) {
+	private String readCharLexeme(char caretLexeme) {
 		StringBuilder lexeme = new StringBuilder();
-		if (buffChar == '\\') {
+		if (currentChar() == '\\') {
 			nextChar();
-			if (buffChar == 'n') {
+			if (currentChar() == 'n') {
 				lexeme.append("\n");
-			} else if (buffChar == caretLexeme) {
+			} else if (currentChar() == caretLexeme) {
 				lexeme.append("" + caretLexeme);
-			} else if (buffChar == '\\') {
+			} else if (currentChar() == '\\') {
 				lexeme.append("\\");
 			} else {
 				String asciiCode = "";
-				if (matchesPattern("([0-9]|[A-F])", buffChar)) {
-					asciiCode += (char)buffChar;
+				if (matchesPattern("([0-9]|[A-F])", currentChar())) {
+					asciiCode += (char) currentChar();
 				} else {
 					throw unexpectedTokenError();
 				}
 				nextChar();
-				if (matchesPattern("([0-9]|[A-F])", buffChar)) {
-					asciiCode += (char)buffChar;
+				if (matchesPattern("([0-9]|[A-F])", currentChar())) {
+					asciiCode += (char) currentChar();
 				} else {
 					throw unexpectedTokenError();
 				}
 				int decAsciiCode = Integer.parseInt(asciiCode,16);
 				lexeme.append(Character.toString(decAsciiCode));
 			}
-		} else if (matchesPattern("[\\x20-\\x7E]", buffChar)) {
-			lexeme.append((char)buffChar);
+		} else if (matchesPattern("[\\x20-\\x7E]", currentChar())) {
+			lexeme.append((char) currentChar());
 		} else {
 			throw unexpectedTokenError();
 		}
 		return lexeme.toString();
 	}
 
-	private void tryReadNumberToken() {
-		if (!matchesPattern("[0-9]", buffChar)) {
-			return;
-		}
+	private void consumeNumber() {
 		StringBuilder lexeme = new StringBuilder();
-		while (matchesPattern("[0-9]", buffChar)) {
-            lexeme.append((char) buffChar);
+		while (matchesPattern("[0-9]", currentChar())) {
+            lexeme.append((char) currentChar());
             nextChar();
         }
-		this.makeToken(Token.Symbol.INTCONST, lexeme.toString(), true);
+		// We stepped forward one character extra above
+		stepBack();
+
+		this.makeToken(Token.Symbol.INTCONST, lexeme.toString());
 	}
 
-	private void tryReadKeywordOrIdentifierToken() {
-		if (!matchesPattern("[_a-z]", buffChar)) {
-			return;
-		}
+	private void consumeKeywordOrIdentifier() {
 		StringBuilder lexeme = new StringBuilder();
-		while (matchesPattern("[_0-9a-z]", buffChar)) {
-			lexeme.append((char) buffChar);
+		while (matchesPattern("[_0-9a-z]", currentChar())) {
+			lexeme.append((char) currentChar());
 			nextChar();
 		}
+		// We stepped forward one character extra above
+		stepBack();
+
 		Token.Symbol symbol = switch (lexeme.toString()) {
 			case "fun" -> Token.Symbol.FUN;
 			case "var" -> Token.Symbol.VAR;
@@ -365,56 +316,77 @@ public class LexAn implements AutoCloseable {
 			case "end" -> Token.Symbol.END;
 			default -> Token.Symbol.IDENTIFIER;
 		};
-        this.makeToken(symbol, lexeme.toString(), true);
+        this.makeToken(symbol, lexeme.toString());
 	}
 
 	private Report.Error unexpectedTokenError() {
-		String charToPrint = switch (buffChar) {
+		String charToPrint = switch (currentChar()) {
             case '\n' -> "\\n";
             case '\t' -> "\\t";
             case '\r' -> "\\r";
-            default -> (char)buffChar + "";
+            default -> (char) currentChar() + "";
         };
-        return this.error("Unexpected token: " + charToPrint+ " (" + buffChar +")");
+        return this.error("Unexpected token: " + charToPrint+ " (" + currentChar() +")");
 	}
 
     private Report.Error error(String message) {
         return new Report.Error(
-                new Report.Location(
-                        this.buffCharLine,
-                        this.buffCharColumn
-                ),
+                getEndPosition(),
                 message
         );
     }
 
-    private void resetStartLocation() {
-        buffCharStartColumn = buffCharColumn;
-        buffCharStartLine = buffCharLine;
-    }
-
-    private void makeToken(Token.Symbol symbol) {
-        this.makeToken(symbol, false);
-    }
-
-	private void makeToken(Token.Symbol symbol, boolean usePreviousPosition) {
-		this.makeToken(symbol, (char)buffChar + "", usePreviousPosition);
+	private Report.Location getEndPosition() {
+		int line = startPosition.begLine();
+		int col = startPosition.begColumn();
+		for (int i = startOffset; i <= endOffset; i++) {
+			int ch = consumedChars.get(i);
+			switch (ch) {
+				case '\n' -> {
+					line++;
+					col = 1;
+				}
+				case '\t' -> {
+					while (col % 8 != 0) {
+						col += 1;
+					}
+					col += 1;
+				}
+				case SOF, EOF -> {}
+				default -> col += 1;
+			}
+		}
+		return new Report.Location(line, col);
 	}
 
-	private void makeToken(Token.Symbol symbol, String lexeme, boolean usePreviousPosition) {
+	private void makeToken(Token.Symbol symbol) {
+		this.makeToken(symbol, (char) currentChar() + "");
+	}
+
+	private void skipChar() {
+		// Steps forward and prepares the positions for the next token,
+		// without creating a token like `makeToken`
+		this.startPosition = getEndPosition();
+		this.startOffset = this.endOffset + 1;
+		nextChar();
+	}
+
+	private void makeToken(Token.Symbol symbol, String lexeme) {
+		Report.Location endPosition = getEndPosition();
         Report.Location location = new Report.Location(
-                usePreviousPosition ? buffCharPrevStartLine : buffCharStartLine,
-                usePreviousPosition ? buffCharPrevStartColumn : buffCharStartColumn,
-                usePreviousPosition ? buffCharPrevLine : buffCharLine,
-                usePreviousPosition ? buffCharPrevColumn : buffCharColumn
+                startPosition.begLine(),
+                startPosition.begColumn(),
+                endPosition.begLine(),
+                endPosition.begColumn()
         );
         this.buffToken = new Token(location, symbol, lexeme);
-        this.shouldResetStartLocation = true;
+		this.startPosition = endPosition;
+		this.startOffset = this.endOffset + 1;
 	}
 
 	private void matchOrThrow(String regex) {
 		Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-		Matcher matcher = pattern.matcher((char)buffChar + "");
+		Matcher matcher = pattern.matcher((char) currentChar() + "");
 		if (!matcher.find()) {
 			throw unexpectedTokenError();
 		}
@@ -467,7 +439,8 @@ public class LexAn implements AutoCloseable {
 			if (cmdLineArgs.length > 1)
 				Report.warning("Unused arguments in the command line.");
 
-			try (LexAn lexAn = new LexAn(cmdLineArgs[0])) {
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(cmdLineArgs[0])));
+			try (LexAn lexAn = new LexAn(reader)) {
 				while (true) {
 					Token token = lexAn.takeToken();
 					System.out.println(token);
@@ -487,7 +460,9 @@ public class LexAn implements AutoCloseable {
 			System.err.println(error.getMessage());
 			error.printStackTrace();
 			System.exit(1);
-		}
-	}
+		} catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }
