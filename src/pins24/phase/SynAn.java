@@ -2,7 +2,7 @@ package pins24.phase;
 
 import pins24.common.*;
 
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -21,8 +21,12 @@ public class SynAn implements AutoCloseable {
 	 * @param srcFileName ime izvorne datoteke.
 	 */
 	public SynAn(final String srcFileName) {
-		this.lexAn = new LexAn(srcFileName);
-	}
+        try {
+            this.lexAn = new LexAn(new BufferedReader(new InputStreamReader(new FileInputStream(srcFileName))));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 	public SynAn(final Reader reader) {
 		this.lexAn = new LexAn(reader);
