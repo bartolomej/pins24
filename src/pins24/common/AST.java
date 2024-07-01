@@ -274,6 +274,8 @@ public class AST {
 	 */
 	public static class VarDef extends MainDef {
 
+		public final boolean isStatic;
+
 		/** Zacetne vrednosti. */
 		public final Nodes<Init> inits;
 
@@ -283,9 +285,10 @@ public class AST {
 		 * @param name  Ime spremenljivke.
 		 * @param inits Zacetne vrednosti.
 		 */
-		public VarDef(final String name, final List<Init> inits) {
+		public VarDef(final String name, final List<Init> inits, final boolean isStatic) {
 			super(name);
 			this.inits = new Nodes<Init>(inits);
+			this.isStatic = isStatic;
 		}
 
 		@Override

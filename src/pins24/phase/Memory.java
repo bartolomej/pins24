@@ -274,7 +274,7 @@ public class Memory {
 				Vector<Integer> inits = decodeInits(varDef, attrAST);
 				int varSize = getVariableSizeInBytes(inits);
 				int currentDepth = frameComputedFieldsStack.size();
-				if (currentDepth == 0) {
+				if (currentDepth == 0 || varDef.isStatic) {
 					attrAST.attrVarAccess.put(varDef, new Mem.AbsAccess(
 							varDef.name,
 							varSize,

@@ -1,0 +1,10 @@
+fun main() =
+    let
+        static var a = 1
+    in
+        putint(^a),
+        putstr("\n")
+    end
+
+fun putint(value)
+fun putstr(value)

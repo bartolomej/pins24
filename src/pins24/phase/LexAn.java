@@ -314,6 +314,7 @@ public class LexAn implements AutoCloseable {
 			case "let" -> Token.Symbol.LET;
 			case "in" -> Token.Symbol.IN;
 			case "end" -> Token.Symbol.END;
+			case "static" -> Token.Symbol.STATIC;
 			default -> Token.Symbol.IDENTIFIER;
 		};
         this.makeToken(symbol, lexeme.toString());
