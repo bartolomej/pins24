@@ -12,6 +12,44 @@ To compile and run a pins24 program, you must clone this repository and run:
 
 You can check out the [./examples](./examples) directory for some example pins24 programs.
 
+## Examples
+
+### Hello World
+```python
+fun main() =
+    putstr("Hello World\n\00")
+```
+
+### Variable assignment, function calling
+```python
+fun main() =
+    let
+        var x = 10
+    in
+	    x = inc(x),
+	    x
+    end
+
+fun inc(n) = n + 1
+```
+
+### Conditionals, loops
+```python
+var x = 20
+
+fun main() =
+    while x > 0 do
+        putint(x),
+        if x % 2 == 0 then
+            putstr(" is even\n\00")
+        else
+            putstr(" is odd\n\00")
+        end,
+        x = x - 1
+    end,
+    0
+```
+
 ## Standard library
 
 ### `exit(exitcode)`
