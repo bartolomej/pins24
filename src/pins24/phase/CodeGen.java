@@ -195,6 +195,11 @@ public class CodeGen {
 
 				instrs.addAll(funDef.stmts.accept(this, frame));
 
+				boolean hasReturn = attrAST.attrHasReturn.getOrDefault(funDef, true);
+				if (!hasReturn) {
+					instrs.add(new PDM.PUSH(-1, loc));
+				}
+
 				// Note tat `parsSize` includes the size of SL
 				instrs.add(new PDM.PUSH(frame.parsSize - 4, loc));
 				instrs.add(new PDM.RETN(frame, loc));
