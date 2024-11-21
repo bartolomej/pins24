@@ -1,0 +1,3 @@
+# Obicajno bi bil rezultat (2 * 2) + 3 = 4 + 3 = 7
+# Zdaj je rezultat 2 * (2 + 3) = 2 * 5 = 10
+fun main() = 2 * 2 + 3
