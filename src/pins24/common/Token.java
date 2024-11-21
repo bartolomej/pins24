@@ -43,6 +43,8 @@ public record Token(Report.Location location, Symbol symbol, String lexeme) impl
 		IN,
 		/** Kljucna beseda {@code end}. */
 		END,
+		/** Kljucna beseda {@code static} **/
+		STATIC,
 		/** Simbol {@code =}. */
 		ASSIGN,
 		/** Simbol {@code ,}. */
